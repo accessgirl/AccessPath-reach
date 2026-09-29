@@ -4,6 +4,8 @@ Tests a floor plan against avatars of people with mobility and functional limita
 
 Each avatar is built from **joint cards** (baseline range of motion plus condition-specific overrides), not from one hand-made model per diagnosis. See [the build brief](docs/AccessPath_Verifier_Build_Brief.docx) for the design.
 
+**[▶ Watch the 70-second demo video](docs/AccessPath_demo.mp4)**
+
 ![Test bathroom, stroke (right side, moderate) in a wheelchair](docs/test_bathroom_stroke_R_moderate_wheelchair.png)
 
 *Test bathroom, profile `stroke_R_moderate_wheelchair`. Each fixture is colored by its result, and the avatar is posed in the reach the verifier found. The 30 in door fails the ADA 32 in minimum. The shelf and switch are reachable by this avatar but sit above seated shoulder height, so they get a CAUTION.*
