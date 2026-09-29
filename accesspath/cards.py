@@ -4,6 +4,8 @@ import json
 
 import openpyxl
 
+from .isncsci import parse_sci_name
+
 STATUSES = {"sourced", "interpolated", "placeholder"}
 RANGE_KINDS = {"joint_limits", "score_band", "task_threshold", "sweep_width", "envelope_shift", "reach_reduction"}
 POSTURES = {"standing", "seated_wheelchair"}
@@ -32,6 +34,7 @@ class Card:
     notes: str | None
     source: str | None
     status: str
+    ISB_term: str | None = None
 
     @property
     def is_baseline(self):
@@ -128,6 +131,7 @@ def load_library(path) -> Library:
             range_kind=row["range_kind"], strength=row.get("strength"), control=row.get("control"),
             laterality=row.get("laterality"), dependency_flags=row.get("dependency_flags"),
             notes=row.get("notes"), source=row.get("source"), status=row["status"],
+            ISB_term=row.get("ISB_term"),
         )
         _check_card(card, where)
         cards[cid] = card
@@ -141,6 +145,11 @@ def load_library(path) -> Library:
                     row["mobility_aid"], str(row["affected_side"]), ids)
         if p.profile_id in profiles:
             raise LibraryError(f"{where}: profile_id '{p.profile_id}' is used twice.")
+        if p.profile_id.upper().startswith("SCI"):
+            try:
+                parse_sci_name(p.profile_id)
+            except ValueError as err:
+                raise LibraryError(f"{where}: {err}")
         if p.posture not in POSTURES:
             raise LibraryError(f"{where}: posture '{p.posture}' should be one of {sorted(POSTURES)}.")
         if p.affected_side not in SIDES:

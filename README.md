@@ -2,7 +2,7 @@
 
 Tests a floor plan against avatars of people with mobility and functional limitations, so you can check whether a design is actually usable before it's built. Can this person reach the outlet? Clear the doorway?
 
-Each avatar is built from **joint cards** (baseline range of motion plus condition-specific overrides), not from one hand-made model per diagnosis. See [the build brief](docs/AccessPath_Verifier_Build_Brief.docx) for the design.
+Each avatar is built from **joint cards** (baseline range of motion plus condition-specific overrides), not from one hand-made model per diagnosis. See [the build brief](docs/AccessPath_Verifier_Build_Brief.docx) for the design, and [the conventions](docs/conventions.md) for how its joint names, axes and angles map to the ISB and ISNCSCI standards when moving data to other software.
 
 **[▶ Watch the 70-second demo video](docs/AccessPath_demo.mp4)**
 
@@ -45,7 +45,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 25 tests, ~30 s
+pytest                                                # 38 tests, ~30 s
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -62,6 +62,17 @@ blender out/avatar.blend --python blender/show_results.py -- --room data/rooms/t
 ```
 
 Add `--render out/view.png` to the last command to save a still image like the one above. An imported `envelope.ply` lines up with the rig, since both use the same frame: metres, origin on the floor under the hip, +X right, +Y forward, +Z up.
+
+## Moving data to other software
+
+[docs/conventions.md](docs/conventions.md) maps the verifier's names and numbers onto two standards:
+- **ISB joint-angle standard (Wu et al. 2005):** axes, signs and rotation order. OpenSim and motion capture use it.
+- **ISNCSCI:** how clinicians describe a spinal cord injury.
+
+In practice:
+- Every card has an `ISB_term`.
+- `accesspath.isb` converts positions and shoulder angles to the ISB frame.
+- Spinal cord injury profiles are named the clinical way, e.g. `SCI_C6_AIS_A`.
 
 ## Editing the card library
 
