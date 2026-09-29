@@ -1,0 +1,47 @@
+{
+  "_about": "Avatar body size and positioning. Every value says where it came from. Segment lengths are fractions of standing height.",
+  "height_m": 1.70,
+  "height_note": "Mid-range adult. Change this to test a shorter or taller avatar.",
+  "segment_ratios": {
+    "_source": "Drillis & Contini (1966) segment-length ratios, as tabulated in Winter, Biomechanics and Motor Control of Human Movement",
+    "_status": "sourced",
+    "hip_height": 0.530,
+    "shoulder_height": 0.818,
+    "shoulder_width": 0.259,
+    "upper_arm": 0.186,
+    "forearm": 0.146,
+    "hand": 0.108,
+    "hip_width": 0.191,
+    "knee_height": 0.285,
+    "ankle_height": 0.039,
+    "foot": 0.152
+  },
+  "postures": {
+    "standing": {
+      "hip_height_m": null,
+      "trunk_lean_max_deg": null,
+      "_note": "null = use the ratio / the trunk card. Hip height = hip_height ratio x height.",
+      "_status": "sourced"
+    },
+    "seated_wheelchair": {
+      "hip_height_m": 0.57,
+      "trunk_lean_max_deg": 30,
+      "_note": "Hip pivot = typical manual wheelchair seat height 0.48 m (19 in) + ~0.09 m to the hip joint. Forward trunk lean capped at 30 degrees for seated balance.",
+      "_status": "interpolated"
+    }
+  },
+  "approach": {
+    "_about": "Distance from the avatar's hip centre (on the floor) to the wall, in metres.",
+    "_status": "interpolated",
+    "standing": {"forward": 0.20, "side": 0.20},
+    "seated_wheelchair": {"forward": 0.60, "side": 0.33},
+    "_note": "Standing forward: toes at the wall. Wheelchair forward: footrests at the wall. Wheelchair side: side of the chair ~0.1 m from the wall, which is inside the ADA 308.3 side-reach 10 in (255 mm) limit."
+  },
+  "doorway_clear_width_m": {
+    "_about": "Clear width a door needs for each mobility aid. null = not sourced yet, so doorway results for that aid are UNVERIFIED.",
+    "wheelchair": {"value": 0.815, "source": "ADA 2010 Standards 404.2.3: 32 in (815 mm) minimum clear width", "status": "sourced"},
+    "none": {"value": 0.54, "source": "Shoulder width (0.259 x height) + 0.05 m each side", "status": "interpolated"},
+    "KAFO": {"value": 0.54, "source": "Same as 'none'; the circumduction card adds the leg swing once it is sourced", "status": "interpolated"},
+    "crutches": {"value": null, "source": "NEEDED: not yet sourced (crutch gait width)", "status": "placeholder"}
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "room_id": "test_bathroom",
+  "description": "Made-up 2.4 m x 3.0 m test room so the whole pipeline runs. Replace with a DXF-derived room once one exists.",
+  "units": "m",
+  "wall_height": 2.4,
+  "walls": [[0, 0, 2.4, 0], [2.4, 0, 2.4, 3.0], [2.4, 3.0, 0, 3.0], [0, 3.0, 0, 0]],
+  "fixtures": [
+    {"id": "outlet_low", "type": "outlet", "position": [0.6, 3.0, 0.30], "wall_normal": [0, -1],
+     "approach": ["forward", "side"], "note": "12 in: common residential height, below the ADA 15 in low reach"},
+    {"id": "outlet_counter", "type": "outlet", "position": [1.8, 3.0, 1.07], "wall_normal": [0, -1],
+     "approach": ["forward"], "obstruction": {"depth_m": 0.60, "height_m": 0.86},
+     "note": "Above a 0.60 m deep vanity counter"},
+    {"id": "switch_door", "type": "light_switch", "position": [2.4, 0.5, 1.22], "wall_normal": [-1, 0],
+     "approach": ["forward", "side"], "note": "48 in: ADA high reach limit"},
+    {"id": "shelf_high", "type": "shelf", "position": [0.0, 1.5, 1.70], "wall_normal": [1, 0],
+     "approach": ["forward", "side"], "note": "Linen shelf at 1.70 m"},
+    {"id": "door_main", "type": "door", "position": [1.2, 0.0, 0.0], "wall_normal": [0, 1],
+     "clear_width_m": 0.76, "note": "30 in clear: narrower than the ADA 32 in minimum"},
+    {"id": "door_closet", "type": "door", "position": [2.4, 2.2, 0.0], "wall_normal": [-1, 0],
+     "clear_width_m": 0.86, "note": "34 in clear"}
+  ]
+}
