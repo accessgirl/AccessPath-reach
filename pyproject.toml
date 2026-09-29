@@ -1,0 +1,17 @@
+[project]
+name = "accesspath-verifier"
+version = "0.1.0"
+description = "Tests floor plans against card-based joint models of people with mobility limitations."
+requires-python = ">=3.10"
+dependencies = ["ikpy>=3.4", "numpy", "scipy", "openpyxl"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+blender = ["bpy"]  # only to run the Blender tests outside Blender
+
+[tool.setuptools]
+packages = ["accesspath"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
