@@ -1,0 +1,17 @@
+{
+  "_about": "Named tasks. 'joints' is the chain that is in play; a result is UNVERIFIED if any of these joints relies on a placeholder card. Side-specific joints get _R / _L added for the arm or legs in use.",
+  "tasks": [
+    {"task_id": "reach_outlet", "kind": "reach", "fixture_types": ["outlet"],
+     "joints": ["trunk", "shoulder", "elbow", "wrist", "hand"],
+     "description": "Touch the wall outlet with a fingertip"},
+    {"task_id": "reach_switch", "kind": "reach", "fixture_types": ["light_switch"],
+     "joints": ["trunk", "shoulder", "elbow", "wrist", "hand"],
+     "description": "Touch the light switch with a fingertip"},
+    {"task_id": "reach_shelf", "kind": "reach", "fixture_types": ["shelf"],
+     "joints": ["trunk", "shoulder", "elbow", "wrist", "hand"],
+     "description": "Touch the front edge of the shelf with a fingertip"},
+    {"task_id": "clear_doorway", "kind": "clearance", "fixture_types": ["door"],
+     "joints": ["hip", "knee", "ankle"],
+     "description": "Pass through the doorway's clear opening"}
+  ]
+}
