@@ -92,3 +92,16 @@ These are in `data/body.json` and the card library, each marked with where it ca
 - **Hand/finger cards.**
 - **Using the `strength`, `control` and `dependency_flags` columns.** They're recorded but don't change results yet.
 - **Shoulder rotation and forearm pronation/supination cards.**
+
+## Demo video
+
+`video/` builds a ~75 s demo video from real verifier output (no audio; it's meant to be talked over):
+
+```
+python -m accesspath verify --profile stroke_R_moderate_wheelchair --profile stroke_R_severe -o out/results.json
+python3 video/blender_clip.py -- --blend out/avatar.blend --results out/results.json \
+    --profile stroke_R_moderate_wheelchair --out out/frames/clip_ --frames 96
+python3 video/make_video.py --clip out/frames/clip_ --out out/AccessPath_demo.mp4
+```
+
+Needs `pip install bpy matplotlib pillow imageio-ffmpeg`, and `out/avatar.blend` with the profile's rig (see "In Blender" above).
