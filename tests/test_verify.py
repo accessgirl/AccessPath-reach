@@ -37,3 +37,11 @@ def test_placeholders_make_passes_unverified(results):
     assert results[("crutches_wet_floor", "door_main")].status == "UNVERIFIED"
     assert results[("kafo_L", "door_closet")].status == "UNVERIFIED"
     assert results[("kafo_L", "switch_door")].status == "PASS"  # the brace doesn't touch the arm chain
+
+
+def test_every_attempt_is_recorded(results):
+    r = results[("baseline_wheelchair", "outlet_counter")]
+    assert len(r.attempts) == 2 and not any(a["reached"] for a in r.attempts)  # both arms tried, both short
+    assert {a["arm"] for a in r.attempts} == {"R", "L"}
+    last = results[("stroke_R_severe", "shelf_high")].attempts[-1]
+    assert last["reached"] and last["arm"] == "L"  # the attempt that passed is the last one tried

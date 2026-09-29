@@ -36,6 +36,7 @@ class Result:
     angles_deg: dict = field(default_factory=dict)
     target_local: list | None = None
     flags: list[str] = field(default_factory=list)
+    attempts: list[dict] = field(default_factory=list)  # every arm/approach tried, in order
 
 
 def load_json(path):
@@ -107,6 +108,10 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps) -> Result:
     base.error_m = None if r.error_m == float("inf") else r.error_m
     base.angles_deg = r.angles_deg
     base.target_local = r.target
+    base.attempts = [{"arm": arm_, "approach": a_, "reached": r_.reached,
+                      "error_m": None if r_.error_m == float("inf") else round(float(r_.error_m), 3),
+                      "angles_deg": r_.angles_deg, "target_local": r_.target}
+                     for a_, arm_, r_ in attempts]
 
     if base.status == "PASS":
         for cap in caps:

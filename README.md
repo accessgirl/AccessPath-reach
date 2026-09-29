@@ -102,6 +102,7 @@ These are in `data/body.json` and the card library, each marked with where it ca
 
 - **AutoCAD/DXF room import.** Rooms are JSON for now (`data/rooms/test_bathroom.json`).
 - **Leg-chain envelopes.** The doorway check uses a width, not a swept leg.
+- **Gait width for canes, crutches and walkers.** For example, the sideways swing of a cane or crutch gait. Each aid needs its own sourced width before doorway and corridor checks can use it.
 - **Hand/finger cards.**
 - **Using the `strength`, `control` and `dependency_flags` columns.** They're recorded but don't change results yet.
 - **Shoulder rotation and forearm pronation/supination cards.**
@@ -118,3 +119,25 @@ python3 video/make_video.py --clip out/frames/clip_ --out out/AccessPath_demo.mp
 ```
 
 Needs `pip install bpy matplotlib pillow imageio-ffmpeg`, and `out/avatar.blend` with the profile's rig (see "In Blender" above).
+
+### Narrated walkthrough (~11 min)
+
+A slower video for someone who wants to see how the tool reaches each answer, not just the answers. It covers:
+- the card library
+- choosing a person (stroke, right side, moderate, in a wheelchair)
+- what those cards change
+- the room
+- each test, one at a time: every arm and approach the verifier tried, in order, then the result and its source
+
+Words are on screen and spoken, with subtitles.
+
+```
+python -m accesspath verify --profile stroke_R_moderate_wheelchair -o out/results.json
+python3 video/fill_poses.py out/results.json          # poses for missed tries, for pictures only
+python3 video/test_clips.py -- --blend out/avatar.blend --results out/results.json \
+    --profile stroke_R_moderate_wheelchair --out out/tests
+python3 video/walkthrough.py --voice-model kokoro-v1.0.onnx --voices voices-v1.0.bin \
+    --out out/AccessPath_walkthrough.mp4
+```
+
+The voice is [Kokoro](https://github.com/thewh1teagle/kokoro-onnx). It needs `pip install kokoro-onnx soundfile` and the two model files from that project's releases. If pip upgrades numpy past 2.0, put it back with `pip install "numpy<2"` for bpy. Add `--speed 1.0` for normal speaking speed; the default is 0.85.

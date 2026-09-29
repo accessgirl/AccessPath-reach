@@ -134,13 +134,14 @@ def _max_lean_reach_gap(chain, target):
     return min(gaps) - 0.02
 
 
-def reach(chain, target, allowed=lambda pts: True, tol=0.02, seeds=8, seed=0) -> Reach:
+def reach(chain, target, allowed=lambda pts: True, tol=0.02, seeds=8, seed=0, pose_on_miss=False) -> Reach:
     """Can the fingertip touch `target`? Tries several starting poses because IK only finds a nearby answer.
 
     `allowed(joint_points)` rejects poses that pass through a wall or counter.
+    `pose_on_miss` still solves for the closest pose when the target is plainly out of reach (for pictures).
     """
     gap = _max_lean_reach_gap(chain, target)
-    if gap > tol:  # farther than a straight arm at any lean: skip the optimiser
+    if gap > tol and not pose_on_miss:  # farther than a straight arm at any lean: skip the optimiser
         return Reach(False, round(float(gap), 3), {}, [])
     rng = np.random.default_rng(seed)
     b = _bounds(chain)
