@@ -28,7 +28,7 @@ def main(path):
         if not missing:
             continue
         profile = compose(lib, r["profile"])
-        body = load_body(ROOT / "data" / "body.json", profile.posture)
+        body = load_body(ROOT / "data" / "body.json", profile.posture, profile.height_m)
         fx = room[r["fixture"]]
         obst = fx.get("obstruction")
         depth = obst["depth_m"] if obst else 0.0

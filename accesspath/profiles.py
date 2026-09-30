@@ -8,7 +8,7 @@ A direction with no card stays at 0 (the joint cannot move that way from neutral
 """
 from dataclasses import dataclass, field, asdict
 
-from .cards import Library, Card
+from .cards import Library, Card, band_edges
 
 AXES = {
     "flexion": ("flex", +1), "extension": ("flex", -1),
@@ -35,6 +35,8 @@ class ComposedProfile:
     limits: dict[str, dict[str, list[float]]]
     applied: list[str] = field(default_factory=list)
     flags: list[Flag] = field(default_factory=list)
+    height_m: float | None = None  # None: the default body in body.json
+    height_note: str = ""
 
     def placeholder_flags(self, joints):
         """Placeholder flags that touch any of these joints (e.g. the joints in a task chain)."""
@@ -51,6 +53,16 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
     p = library.profiles[profile_id]
     sides = {"R": ["R"], "L": ["L"], "both": ["R", "L"], "none": []}[p.affected_side]
     out = ComposedProfile(p.profile_id, p.description, p.posture, p.mobility_aid, sides, {})
+    if p.body_band is not None:
+        b = library.bands[p.body_band]
+        if p.body_height_in is not None:
+            h, why = p.body_height_in, f"dialled in to {p.body_height_in:g} in within band {b.band_id}"
+        else:
+            h, why = b.stature_min_in, (f"band {b.band_id} ({b.stature_min_in:g} to {b.stature_max_in:g} in), "
+                                        f"reach tested at its shortest height, {b.stature_min_in:g} in")
+        out.height_m, out.height_note = round(h * 0.0254, 4), why
+    elif p.body_height_in is not None:
+        out.height_m, out.height_note = round(p.body_height_in * 0.0254, 4), f"measured height {p.body_height_in:g} in"
 
     for card in library.cards.values():
         if card.is_baseline:
@@ -76,7 +88,12 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
                                   "but not applied as a joint limit." + (f" {card.notes}" if card.notes else "")))
             continue
 
-        if card.range_kind == "score_band":
+        if cid in p.settings:
+            value = p.settings[cid]
+            lo, hi = band_edges(card)
+            out.flags.append(Flag(cid, joints, "note", f"{card.severity or card.condition} dialled in to "
+                                  f"{_fmt(value)} degrees within its range ({_fmt(lo)} to {_fmt(hi)})."))
+        elif card.range_kind == "score_band":
             value = card.ROM_min_deg if card.ROM_min_deg is not None else card.ROM_max_deg
             out.flags.append(Flag(cid, joints, "note",
                                   f"{card.severity} is a scoring band ({_fmt(card.ROM_min_deg)} to "

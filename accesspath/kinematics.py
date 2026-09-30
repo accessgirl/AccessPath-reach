@@ -39,9 +39,10 @@ class Body:
         return self.hip_height + self.trunk
 
 
-def load_body(path, posture) -> Body:
+def load_body(path, posture, height_m=None) -> Body:
+    """`height_m` overrides the default height (a body band or a measured client); segments scale with it."""
     d = json.loads(Path(path).read_text())
-    h, r = d["height_m"], d["segment_ratios"]
+    h, r = (height_m or d["height_m"]), d["segment_ratios"]
     p = d["postures"][posture]
     return Body(
         height=h,

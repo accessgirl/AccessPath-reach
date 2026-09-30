@@ -45,7 +45,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 38 tests, ~30 s
+pytest                                                # 51 tests, ~60 s
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -80,6 +80,8 @@ Open `data/card_library.xlsx`. The **Field Definitions** sheet explains every co
 
 - **To add a citation:** fill in the numbers and source, and set status to `sourced`. Then run `python -m accesspath check-cards`; it will say exactly which row is wrong if something doesn't fit.
 - **To make a new profile:** add a row to the **Profiles** sheet listing the condition card_ids it uses.
+- **To dial a card within its range:** write `card_id@value` in the profile's card_ids, e.g. `stroke-shoulder-abd-1@60` (that card's band is 45 to 90 degrees). With no `@value`, the cautious edge is used. A value outside the range is rejected.
+- **To set a body size:** give the profile a `body_band` (A to D on the **Body Bands** sheet: 4-inch height ranges covering the 5th to 95th percentile of U.S. adults, from CDC data). Reach is then tested at the band's shortest height. A `body_height_in` dials in a measured height within the band; a measured height always beats a band.
 - **Leave unsourced numbers empty,** not a dash.
 - **`range_kind` tells the verifier how to read the numbers:**
   - Stroke scoring bands (`score_band`) use the band's lower edge, so the design has to work for everyone in the band.

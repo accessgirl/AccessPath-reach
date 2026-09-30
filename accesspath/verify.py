@@ -37,6 +37,7 @@ class Result:
     target_local: list | None = None
     flags: list[str] = field(default_factory=list)
     attempts: list[dict] = field(default_factory=list)  # every arm/approach tried, in order
+    body: str = ""  # which body size was tested (default, a body band, or a measured height)
 
 
 def load_json(path):
@@ -47,7 +48,7 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
     results = []
     for pid in profile_ids or list(library.profiles):
         profile = compose(library, pid)
-        body = load_body(body_path, profile.posture)
+        body = load_body(body_path, profile.posture, profile.height_m)
         caps = [c for c in library.caps if c.applies_to_posture == profile.posture]
         for task in tasks:
             if task_ids and task["task_id"] not in task_ids:
@@ -60,6 +61,7 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
                 else:
                     r = check_doorway(profile, body, task, fx)
                 r.room = room["room_id"]
+                r.body = profile.height_note or "default body (body.json)"
                 results.append(r)
     return results
 
