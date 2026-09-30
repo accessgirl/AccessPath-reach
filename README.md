@@ -96,6 +96,8 @@ These are in `data/body.json` and the card library, each marked with where it ca
 - **Approach distances:** how close the avatar gets to the wall. Standing forward 0.20 m, wheelchair forward 0.60 m (footrests at the wall, no knee space under counters), wheelchair side 0.33 m.
 - **Shoulder extension 0–60° and trunk flexion 0–80°:** added from AAOS ranges and marked `interpolated`, since the arm chain needs them.
 - **Doorway width with no mobility aid:** shoulder width + 5 cm each side (interpolated).
+- **Arm thickness:** the arm's centre line keeps 3.5 cm from walls and counters (estimate, `limb_clearance_m` in `data/body.json`); only the hand touches.
+- **Getting there:** a reach counts only if the arm can move from resting to the reach without passing through a wall or counter. The verifier tries the direct move, then "raise the arm forward, then over" paths, and the video animates the path it found.
 - **Reach point:** a reach counts when the fingertip touches the target. Legs aren't used, so there's no squatting or stepping.
 
 ## Not built yet

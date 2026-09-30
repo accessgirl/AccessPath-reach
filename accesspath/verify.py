@@ -110,7 +110,7 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps) -> Result:
     base.target_local = r.target
     base.attempts = [{"arm": arm_, "approach": a_, "reached": r_.reached,
                       "error_m": None if r_.error_m == float("inf") else round(float(r_.error_m), 3),
-                      "angles_deg": r_.angles_deg, "target_local": r_.target}
+                      "angles_deg": r_.angles_deg, "target_local": r_.target, "path_deg": r_.path or []}
                      for a_, arm_, r_ in attempts]
 
     if base.status == "PASS":
@@ -131,7 +131,7 @@ def _try_arm(chain, body, approach, arm, h, obst):
         for back in STEP_BACK:
             wall = body.approach["forward"] + depth + back
             target = np.array([sx * body.half_shoulder, wall, h])
-            r = reach(chain, target, _allowed(1, wall, depth, obst))
+            r = reach(chain, target, _allowed(1, wall, depth, obst, body.limb_clearance))
             r.target = [round(float(v), 3) for v in target]
             best = _better(best, r)
             if r.reached:
@@ -141,7 +141,7 @@ def _try_arm(chain, body, approach, arm, h, obst):
         wall = body.approach["side"] + depth
         for slide in SLIDE:
             target = np.array([sx * wall, slide, h])
-            r = reach(chain, target, _allowed(0, sx * wall, depth, obst))
+            r = reach(chain, target, _allowed(0, sx * wall, depth, obst, body.limb_clearance))
             r.target = [round(float(v), 3) for v in target]
             best = _better(best, r)
             if r.reached:
@@ -153,19 +153,28 @@ def _better(a, b):
     return b if a is None or b.error_m < a.error_m else a
 
 
-def _allowed(axis, wall, depth, obst):
-    """No part of the arm or body may pass through the wall, or into the counter below its top."""
+def _allowed(axis, wall, depth, obst, clear=0.0):
+    """No part of the arm or body may pass through the wall, or into the counter below its top.
+
+    The arm has thickness: its centre line (shoulder to wrist) keeps `clear` metres from any surface.
+    Only the hand may come right up to the wall to touch the target.
+    """
     sign = 1 if wall >= 0 else -1
     lim = abs(wall)
 
-    def ok(pts):
-        dense = np.concatenate([pts[:-1] + (pts[1:] - pts[:-1]) * t for t in np.linspace(0, 1, 6)])
-        d = dense[:, axis] * sign
-        if np.any(d > lim + TOUCH_TOL):
+    def dense(pts):
+        return np.concatenate([pts[:-1] + (pts[1:] - pts[:-1]) * t for t in np.linspace(0, 1, 6)])
+
+    def clear_of(points, margin):
+        d = points[:, axis] * sign
+        if np.any(d > lim + TOUCH_TOL - margin):
             return False
-        if obst and np.any((d > lim - depth) & (dense[:, 2] < obst["height_m"])):
+        if obst and np.any((d > lim - depth - margin) & (points[:, 2] < obst["height_m"] + margin)):
             return False
         return True
+
+    def ok(pts):
+        return clear_of(dense(pts[:-1]), clear) and clear_of(dense(pts[-2:]), 0.0)
     return ok
 
 

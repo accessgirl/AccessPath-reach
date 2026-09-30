@@ -445,7 +445,8 @@ class Story:
         frames = sorted(self.clips.glob(f"{r['fixture']}_{i}_*.png"))
         motion = len(frames) / CLIP_FPS
         side = "left" if att["arm"] == "L" else "right"
-        how = "facing the wall" if att["approach"] == "forward" else "parked sideways along the wall"
+        what = "counter" if "obstruction" in self.fx[r["fixture"]] else "wall"
+        how = f"facing the {what}" if att["approach"] == "forward" else f"parked sideways along the {what}"
         label = f"Try {i + 1}: {side} arm, chair {how}"
         if att["reached"]:
             outcome, short = "The fingertip touches it.", "✓ Touches it"
@@ -520,7 +521,8 @@ class Story:
         sh = self.body.shoulder_height
         cap = next(c for c in self.lib.caps if c.rule == "target_above_shoulder_height")
         side = "left" if r.get("arm") == "L" else "right"
-        how = {"forward": "with the chair facing the wall", "side": "with the chair parked alongside the wall"}
+        what = "counter" if "obstruction" in f else "wall"
+        how = {"forward": f"with the chair facing the {what}", "side": f"with the chair parked alongside the {what}"}
         if f["type"] == "door":
             lines = [f"Result: {st.lower()}."]
             why = f"{inches(f['clear_width_m'])} in opening; a wheelchair needs 32 in."

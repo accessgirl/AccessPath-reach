@@ -28,6 +28,7 @@ class Body:
     trunk_lean_max: float | None
     approach: dict
     doorway: dict
+    limb_clearance: float = 0.0  # the arm's centre line must stay this far from surfaces
 
     @property
     def arm_length(self):
@@ -51,6 +52,7 @@ def load_body(path, posture) -> Body:
         trunk_lean_max=p["trunk_lean_max_deg"],
         approach=d["approach"][posture],
         doorway=d["doorway_clear_width_m"],
+        limb_clearance=d.get("limb_clearance_m", {}).get("value", 0.0),
     )
 
 
@@ -119,6 +121,7 @@ class Reach:
     angles_deg: dict
     fingertip: list
     target: list | None = None  # avatar frame; lets Blender place the avatar in the room
+    path: list | None = None  # joint-angle waypoints from rest to the pose, none passing through a surface
 
 
 def _max_lean_reach_gap(chain, target):
@@ -137,7 +140,8 @@ def _max_lean_reach_gap(chain, target):
 def reach(chain, target, allowed=lambda pts: True, tol=0.02, seeds=8, seed=0, pose_on_miss=False) -> Reach:
     """Can the fingertip touch `target`? Tries several starting poses because IK only finds a nearby answer.
 
-    `allowed(joint_points)` rejects poses that pass through a wall or counter.
+    `allowed(joint_points)` rejects poses that pass through a wall or counter. A pose that touches the target
+    only counts if the arm can also get there from rest without passing through anything (`find_path`).
     `pose_on_miss` still solves for the closest pose when the target is plainly out of reach (for pictures).
     """
     gap = _max_lean_reach_gap(chain, target)
@@ -153,14 +157,62 @@ def reach(chain, target, allowed=lambda pts: True, tol=0.02, seeds=8, seed=0, po
         if not allowed(pts):
             continue
         err = float(np.linalg.norm(pts[-1] - target))
+        path = find_path(chain, a, allowed) if err <= tol else None
+        if err <= tol and path is None:
+            continue  # the pose touches the target, but no arm could get there without going through a surface
         if best is None or err < best[0]:
-            best = (err, a, pts[-1])
+            best = (err, a, pts[-1], path)
         if err <= tol:
             break
     if best is None:
         return Reach(False, float("inf"), {}, [])
-    err, a, tip = best
+    err, a, tip, path = best
+    r = Reach(err <= tol, round(err, 3), _named(chain, a), [round(float(v), 3) for v in tip])
+    r.path = [_named(chain, w) for w in path] if path else []
+    return r
+
+
+def _named(chain, a):
     names = [lk.name for lk, m in zip(chain.links, chain.active_links_mask) if m]
-    return Reach(err <= tol, round(err, 3),
-                 {n: round(float(np.degrees(v)), 1) for n, v in zip(names, a[chain.active_links_mask])},
-                 [round(float(v), 3) for v in tip])
+    return {n: round(float(np.degrees(v)), 1) for n, v in zip(names, a[chain.active_links_mask])}
+
+
+def rest_pose(chain):
+    """Arm hanging at the side, trunk upright (clipped into each joint's allowed range)."""
+    b = _bounds(chain)
+    return np.clip(np.zeros(len(b)), b[:, 0], b[:, 1])
+
+
+def find_path(chain, final, allowed, steps=24):
+    """Waypoints from rest to `final` that never pass through a surface, or None.
+
+    Tries the straight move first, then the way a person clears a wall beside them: lean, raise the arm
+    forward with the elbow bent, then move it into place ("forward, up, then over").
+    """
+    rest = rest_pose(chain)
+    b = _bounds(chain)
+    names = [lk.name for lk in chain.links]
+    i_trunk = names.index("trunk_flex")
+    i_flex = next(i for i, n in enumerate(names) if n.startswith("shoulder_") and n.endswith("_flex"))
+    i_abd = next(i for i, n in enumerate(names) if n.endswith("_abd"))
+    i_elbow = next(i for i, n in enumerate(names) if n.startswith("elbow_"))
+
+    candidates = [[rest, final]]
+    for raise_deg in (60, 90, 120, 150, 180):
+        via = rest.copy()
+        via[i_trunk] = final[i_trunk]
+        via[i_flex] = np.radians(raise_deg)
+        via[i_elbow] = np.radians(90)
+        via = np.clip(via, b[:, 0], b[:, 1])
+        up = via.copy()
+        up[i_abd] = final[i_abd]
+        candidates.append([rest, via, final])
+        candidates.append([rest, via, up, final])
+    for wps in candidates:
+        if all(_segment_clear(chain, p, q, allowed, steps) for p, q in zip(wps, wps[1:])):
+            return wps
+    return None
+
+
+def _segment_clear(chain, p, q, allowed, steps):
+    return all(allowed(joint_positions(chain, p + (q - p) * t)) for t in np.linspace(0, 1, steps))

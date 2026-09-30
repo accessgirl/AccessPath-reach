@@ -35,7 +35,7 @@ def main(path):
         for a in missing:
             t = np.array(a["target_local"])
             axis = 1 if a["approach"] == "forward" else 0
-            got = reach(arm_chain(body, profile, a["arm"]), t, _allowed(axis, t[axis], depth, obst), pose_on_miss=True)
+            got = reach(arm_chain(body, profile, a["arm"]), t, _allowed(axis, t[axis], depth, obst, body.limb_clearance), pose_on_miss=True)
             a["angles_deg"] = got.angles_deg
             a["pose_note"] = "closest pose, for pictures only"
             print(f"{r['fixture']} {a['arm']} {a['approach']}: posed, fingertip {got.error_m * 100:.0f} cm from target")

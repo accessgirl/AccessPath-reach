@@ -86,11 +86,23 @@ def clip(a, room, result, attempt, index):
     parented_stick_figure(av, coll, sr.material("avatar", (0.2, 0.35, 0.75, 1)))
     if av.location.z < -0.01:
         sr.wheelchair(av, coll, rig.body_dims(os.path.join(ROOT, "data", "body.json"), "seated_wheelchair"))
-    for n in REACH_BONES:
-        pb = av.pose.bones[n]
-        pb.keyframe_insert("rotation_euler", frame=1)
-        pb.rotation_euler = pose[n]
-        pb.keyframe_insert("rotation_euler", frame=a.frames)
+    # Follow the verifier's checked path (rest -> ... -> reach), so the arm never passes through a surface.
+    # A miss has no path: the arm moves straight to its closest try.
+    path = attempt.get("path_deg") or []
+    # Straight-line moves between waypoints, as the verifier checked them (eased curves could cut corners).
+    bpy.context.preferences.edit.keyframe_new_interpolation_type = "LINEAR"
+    if len(path) >= 2:
+        for k, wp in enumerate(path):
+            sr.pose_arm(av, attempt["arm"], wp)
+            f = 1 + round((a.frames - 1) * k / (len(path) - 1))
+            for n in REACH_BONES:
+                av.pose.bones[n].keyframe_insert("rotation_euler", frame=f)
+    else:
+        for n in REACH_BONES:
+            pb = av.pose.bones[n]
+            pb.keyframe_insert("rotation_euler", frame=1)
+            pb.rotation_euler = pose[n]
+            pb.keyframe_insert("rotation_euler", frame=a.frames)
 
     bpy.ops.object.camera_add(location=cam_loc)
     cam = bpy.context.active_object
