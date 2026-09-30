@@ -684,8 +684,11 @@ def main():
     import imageio_ffmpeg
     ff = imageio_ffmpeg.get_ffmpeg_exe()
     cmd = [ff, "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-           "-i", str(wav_path), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20",
-           "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", a.out]
+           # Main profile, regular keyframes and 48 kHz stereo audio: phone and TV players showed a black
+           # picture (sound only) with the encoder defaults and the 24 kHz mono voice track.
+           "-i", str(wav_path), "-c:v", "libx264", "-profile:v", "main", "-level", "3.1", "-pix_fmt", "yuv420p",
+           "-g", str(FPS * 2), "-crf", "26", "-maxrate", "1500k", "-bufsize", "3000k",
+           "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "96k", "-shortest", "-movflags", "+faststart", a.out]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
     for s in scenes:
         story.cur = s
