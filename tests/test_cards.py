@@ -20,7 +20,7 @@ def edited(tmp_path, card_id, **changes):
 
 
 def test_real_library_loads(library):
-    assert len(library.cards) == 36
+    assert len(library.cards) == 38
     assert {c.status for c in library.cards.values()} == {"sourced", "interpolated", "placeholder"}
     assert "stroke_R_moderate" in library.profiles
 

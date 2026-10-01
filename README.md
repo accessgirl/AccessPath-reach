@@ -45,7 +45,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 75 tests, ~2 min
+pytest                                                # 76 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -88,7 +88,7 @@ Open `data/card_library.xlsx`. The **Field Definitions** sheet explains every co
 - **To set a body size:** give the profile a `body_band` (A to D on the **Body Bands** sheet: 4-inch height ranges covering the 5th to 95th percentile of U.S. adults, from CDC data). Reach is then tested at the band's shortest height. A `body_height_in` dials in a measured height within the band; a measured height always beats a band.
 - **Leave unsourced numbers empty,** not a dash.
 - **`range_kind` tells the verifier how to read the numbers:**
-  - Stroke scoring bands (`score_band`) use the band's lower edge, so the design has to work for everyone in the band.
+  - Bands (`score_band`: a stroke scoring band, or a study's mean ± 1 SD) use the band's lower edge, so the design has to work for everyone in the band.
   - Task thresholds (`task_threshold`) are recorded but never applied as a joint limit.
 
 ## Assumptions to confirm

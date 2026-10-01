@@ -67,3 +67,15 @@ def test_taller_body_reaches_higher(tmp_path):
     r_short = reach(arm_chain(load_body(DATA / "body.json", "seated_wheelchair", short.height_m), short, "L"), target)
     r_tall = reach(arm_chain(load_body(DATA / "body.json", "seated_wheelchair", tall.height_m), tall, "L"), target)
     assert r_tall.error_m < r_short.error_m
+
+
+def test_stroke_arm_lift_cards_use_the_lower_edge(tmp_path):
+    lib = with_profile(tmp_path, "stroke-shoulder-flex-weak, stroke-shoulder-flex-milder@127")
+    weak, milder = lib.cards["stroke-shoulder-flex-weak"], lib.cards["stroke-shoulder-flex-milder"]
+    assert (weak.ROM_min_deg, weak.ROM_max_deg) == (48.4, 71.6)  # Taketomi 2023: 60.0 ± 11.6
+    assert (milder.ROM_min_deg, milder.ROM_max_deg) == (116.4, 137.8)  # Yim & Kim 2024: 127.1 ± 10.7
+    assert weak.status == milder.status == "sourced"
+    lib2 = with_profile(tmp_path, "stroke-shoulder-flex-weak", pid="weak_only")
+    assert compose(lib2, "weak_only").limits["shoulder_R"]["flex"][1] == 48.4
+    assert compose(lib2, "weak_only").limits["shoulder_L"]["flex"][1] == 180.0
+    assert compose(lib, "test_person").limits["shoulder_R"]["flex"][1] == 127.0  # last card wins, dialled

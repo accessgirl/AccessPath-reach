@@ -96,7 +96,7 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
         elif card.range_kind == "score_band":
             value = card.ROM_min_deg if card.ROM_min_deg is not None else card.ROM_max_deg
             out.flags.append(Flag(cid, joints, "note",
-                                  f"{card.severity} is a scoring band ({_fmt(card.ROM_min_deg)} to "
+                                  f"{card.severity} is a band ({_fmt(card.ROM_min_deg)} to "
                                   f"{_fmt(card.ROM_max_deg)} degrees); using its lower edge, {_fmt(value)} degrees, "
                                   "so the design has to work for everyone in the band."))
         else:
