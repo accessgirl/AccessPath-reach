@@ -15,6 +15,7 @@ import numpy as np
 from .cards import Library
 from .kinematics import load_body, arm_chain, reach
 from .profiles import compose, ComposedProfile
+from .privacy import check_tree
 
 RANK = {"FAIL": 3, "UNVERIFIED": 2, "CAUTION": 1, "PASS": 0}
 TOUCH_TOL = 0.01  # the fingertip may touch the wall surface
@@ -45,6 +46,7 @@ def load_json(path):
 
 
 def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=None, task_ids=None):
+    check_tree(room, f"room {room.get('room_id', '?')}")
     results = []
     for pid in profile_ids or list(library.profiles):
         profile = compose(library, pid)

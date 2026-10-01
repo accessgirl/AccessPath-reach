@@ -45,7 +45,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 53 tests, ~2 min
+pytest                                                # 75 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -73,6 +73,10 @@ In practice:
 - Every card has an `ISB_term`.
 - `accesspath.isb` converts positions and shoulder angles to the ISB frame.
 - Spinal cord injury profiles are named the clinical way, e.g. `SCI_C6_AIS_A`.
+
+## Privacy
+
+The engine never sees who a person is: only numbers about a body and a room, under a random client code. Identifying fields (names, birthdates, addresses, diagnoses and similar) are rejected wherever they would enter. See [docs/privacy.md](docs/privacy.md).
 
 ## Editing the card library
 

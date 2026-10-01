@@ -5,6 +5,7 @@ import json
 import openpyxl
 
 from .isncsci import parse_sci_name
+from .privacy import check_fields, IdentifyingDataError
 
 STATUSES = {"sourced", "interpolated", "placeholder"}
 RANGE_KINDS = {"joint_limits", "score_band", "task_threshold", "sweep_width", "envelope_shift", "reach_reduction"}
@@ -166,6 +167,11 @@ def load_library(path) -> Library:
                 raise LibraryError(f"{where}: status '{b.status}' should be one of {sorted(STATUSES)}.")
             bands[b.band_id] = b
 
+    if "Profiles" in wb.sheetnames:
+        try:
+            check_fields([c.value for c in wb["Profiles"][1]], "Profiles sheet")
+        except IdentifyingDataError as err:
+            raise LibraryError(str(err))
     profiles: dict[str, Profile] = {}
     for n, row in _rows(wb, "Profiles"):
         where = f"Profiles row {n}"
