@@ -531,6 +531,21 @@ class Story:
                      f"{r['error_m'] * 100:.0f} centimetres short.",
                      "A designer would know to move it before it's built."]
             why = f"Best try stops {r['error_m'] * 100:.0f} cm ({r['error_m'] * 100 / 2.54:.0f} in) short."
+        elif st == "CAUTION" and r.get("population_pct") is None and "below 16 in" in r["reason"]:
+            lines = [f"Result: caution. The {side} hand does reach it, {how[r['approach']]}.",
+                     f"But {inches(f['position'][2])} inches is lower than anyone was measured reaching, in a study of "
+                     "wheelchair users funded by the U.S. Access Board. Many couldn't safely reach even fifteen "
+                     "inches, and the researchers recommend twenty-eight inches as the lowest height.",
+                     "So instead of a plain pass, the tool flags it."]
+            why = (f"Reached ({side} arm), but {inches(f['position'][2])} in is below anything measured. "
+                   "The study recommends 28 in as the lowest height.")
+        elif st == "CAUTION" and r.get("population_pct") is not None:
+            p = r["population_pct"]
+            lines = [f"Result: caution. The {side} hand does reach it, {how[r['approach']]}.",
+                     f"But in a study funded by the U.S. Access Board, only about {p} percent of measured wheelchair "
+                     "users could reach that spot. The researchers' own line for good design is seventy-five percent.",
+                     "So instead of a plain pass, the tool flags it."]
+            why = f"Reached ({side} arm), but only about {p}% of measured wheelchair users could reach it."
         elif st == "CAUTION":
             lines = [f"Result: caution. The {side} hand does reach it, {how[r['approach']]}.",
                      f"But it's above this person's seated shoulder height, about {inches(sh)} inches. A study funded "
@@ -542,8 +557,17 @@ class Story:
         else:
             lines = [f"Result: pass. The {side} hand reaches it, {how[r['approach']]}."]
             why = f"Reached with the {side} arm, chair {'facing the wall' if r['approach'] == 'forward' else 'alongside'}."
-        src = {"CAUTION": "Source: " + (cap.source or ""),
-               "FAIL": "", "PASS": ""}[st] if f["type"] != "door" else "Source: ADA 2010 Standards 404.2.3"
+            if r.get("population_pct") is not None:
+                lines.append(f"And in the Access Board study, about {r['population_pct']} percent of measured "
+                             "wheelchair users could reach it too.")
+                why += f" About {r['population_pct']}% of measured wheelchair users could too."
+        idea = "Source: IDeA Center, University at Buffalo, Design Resource #20 (funded by the U.S. Access Board)"
+        if f["type"] == "door":
+            src = "Source: ADA 2010 Standards 404.2.3"
+        elif r.get("population_pct") is not None or "below 16 in" in r["reason"]:
+            src = idea
+        else:
+            src = {"CAUTION": "Source: " + (cap.source or ""), "FAIL": "", "PASS": ""}[st]
 
         def draw(img, t, on):
             kicker(img, f"Test {k} · {self.NAMES[r['fixture']]}", on(0))
@@ -571,9 +595,11 @@ class Story:
                       f"{c['FAIL']} fails. Every one comes with its reason and its source."], draw)
 
     def limits(self):
-        items = [f"One body size so far: an average adult, {feet_in(self.bodyjson['height_m'])} tall.",
+        items = [f"This video tests one body size: an average adult, {feet_in(self.bodyjson['height_m'])} tall. "
+                 "The tool can test other heights too.",
                  "Wheelchair seat height and distances are estimates, and marked that way.",
-                 "Not in the library yet: post-polio, canes, crutches and walkers, and many other conditions.",
+                 "Not in the library yet: post-polio and many other conditions. For canes, crutches and walkers, "
+                 "only door widths so far.",
                  "The room is a test room. Importing real floor plans (AutoCAD) comes next."]
 
         def draw(img, t, on):
@@ -584,10 +610,11 @@ class Story:
                 text(img, (90, y), "•", 40, ACCENT, bold=True, alpha=a)
                 para(img, (135, y + 4), s, 30, INK, alpha=a, width=56)
         return Scene(["It's just as important to be clear about what the tool doesn't do yet.",
-                      f"There's one body size so far: an average adult, five foot seven.",
+                      "This video tests one body size: an average adult, five foot seven. The tool can test "
+                      "other heights too.",
                       "The wheelchair's seat height and distances are estimates, and they're marked that way.",
-                      "Many conditions and mobility aids aren't in the library yet, such as post-polio syndrome, "
-                      "canes, crutches and walkers. Each one needs its own research before it goes in.",
+                      "Many conditions aren't in the library yet, such as post-polio syndrome. For canes, crutches "
+                      "and walkers, only door widths are in so far. Each one needs its own research before it goes in.",
                       "And the room is a test room. Reading real architectural floor plans comes next."], draw)
 
     def close(self):
