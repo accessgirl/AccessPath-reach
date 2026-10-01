@@ -17,9 +17,13 @@ def test_wheelchair_doors(results):
     assert results[("baseline_wheelchair", "door_closet")].status == "PASS"
 
 
-def test_wheelchair_above_shoulder_is_caution(results):
+def test_wheelchair_reach_is_checked_against_measured_users(results):
+    # Above seated shoulder height, but most measured wheelchair users could still reach 48 in from the side.
     r = results[("baseline_wheelchair", "switch_door")]
-    assert r.status == "CAUTION" and "21%" in r.reason
+    assert r.status == "PASS" and r.population_pct >= 75 and "IDeA Center" in r.reason
+    # A 1.70 m shelf: the avatar reaches it, almost no measured wheelchair user could.
+    r = results[("baseline_wheelchair", "shelf_high")]
+    assert r.status == "CAUTION" and r.population_pct < 25
 
 
 def test_counter_outlet_needs_the_side_approach(results):
@@ -27,7 +31,7 @@ def test_counter_outlet_needs_the_side_approach(results):
     r = results[("baseline_wheelchair", "outlet_counter")]
     forward = [a for a in r.attempts if a["approach"] == "forward"]
     assert forward and not any(a["reached"] for a in forward) and min(a["error_m"] for a in forward) > 0.05
-    assert r.approach == "side" and r.status == "CAUTION"  # reached, but above seated shoulder height
+    assert r.approach == "side" and r.status == "CAUTION"  # reached, but few measured wheelchair users could
 
 
 def test_stroke_uses_the_unaffected_arm(results):

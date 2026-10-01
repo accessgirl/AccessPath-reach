@@ -8,7 +8,7 @@ Each avatar is built from **joint cards** (baseline range of motion plus conditi
 
 ![Test bathroom, stroke (right side, moderate) in a wheelchair](docs/test_bathroom_stroke_R_moderate_wheelchair.png)
 
-*Test bathroom, profile `stroke_R_moderate_wheelchair`. Each fixture is colored by its result, and the avatar is posed in the reach the verifier found. The 30 in door fails the ADA 32 in minimum. The shelf and switch are reachable by this avatar but sit above seated shoulder height, so they get a CAUTION.*
+*Test bathroom, profile `stroke_R_moderate_wheelchair`. Each fixture is colored by its result, and the avatar is posed in the reach the verifier found. The 30 in door fails the ADA 32 in minimum. The shelf is reachable by this avatar, but only about 5% of measured wheelchair users could reach it, so it gets a CAUTION. (This picture is from before that check was added, when the switch was also CAUTION.)*
 
 ## Where each step of the brief stands
 
@@ -28,7 +28,7 @@ The Blender skeleton and the IKPy reach chain are tested against each other: for
 | Result | Meaning |
 |---|---|
 | **PASS** | The avatar can do it, using only sourced or interpolated data |
-| **CAUTION** | The avatar can do it, but a population statistic says many real people in this group can't (e.g. ~21% of wheelchair users can't reach above shoulder height) |
+| **CAUTION** | The avatar can do it, but measured data says many real people in this group can't. For wheelchair profiles: fewer than 75% of the IDeA Center's measured manual wheelchair users could reach that spot (`data/idea_reach.json`, see below) |
 | **UNVERIFIED** | The avatar can do it only because able-bodied values stood in for data that isn't sourced yet. The real answer may be FAIL |
 | **FAIL** | The avatar can't do it, even with able-bodied values standing in for missing data |
 
@@ -45,7 +45,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 76 tests, ~2 min
+pytest                                                # 81 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -77,6 +77,15 @@ In practice:
 ## Privacy
 
 The engine never sees who a person is: only numbers about a body and a room, under a random client code. Identifying fields (names, birthdates, addresses, diagnoses and similar) are rejected wherever they would enter. See [docs/privacy.md](docs/privacy.md).
+
+## Checking reach against measured wheelchair users
+
+The avatar answers "can this person reach it?". For wheelchair profiles the verifier also asks "how many real wheelchair users could?", using the IDeA Center's measurements of 235 manual wheelchair users (Design Resource #20, University at Buffalo, funded by the U.S. Access Board), copied cell by cell into `data/idea_reach.json`.
+
+- Each reach result records `population_pct`: the share who could reach that spot, using the approach most of them could manage (from the side or straight ahead).
+- It's the cautious reading: the 41 of 276 people who couldn't reach above shoulder height weren't measured, and are counted as unable. Between chart cells, the farther cell is used.
+- An avatar PASS becomes CAUTION when that share is under 75%, the study's own line for good design, or when the target is below 16 in (not measured; the study recommends 28 in as a low limit).
+- The data is for manual chairs and a light object. Power chairs and scooters reach less straight ahead (D'Souza et al., RESNA 2009), so treat these figures as a best case for them.
 
 ## Editing the card library
 

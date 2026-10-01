@@ -16,6 +16,7 @@ from .cards import Library
 from .kinematics import load_body, arm_chain, reach
 from .profiles import compose, ComposedProfile
 from .privacy import check_tree
+from . import population
 
 RANK = {"FAIL": 3, "UNVERIFIED": 2, "CAUTION": 1, "PASS": 0}
 TOUCH_TOL = 0.01  # the fingertip may touch the wall surface
@@ -39,14 +40,17 @@ class Result:
     flags: list[str] = field(default_factory=list)
     attempts: list[dict] = field(default_factory=list)  # every arm/approach tried, in order
     body: str = ""  # which body size was tested (default, a body band, or a measured height)
+    population_pct: int | None = None  # share of measured wheelchair users who could reach it (IDeA Center)
 
 
 def load_json(path):
     return json.loads(Path(path).read_text())
 
 
-def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=None, task_ids=None):
+def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=None, task_ids=None,
+        population_path=None):
     check_tree(room, f"room {room.get('room_id', '?')}")
+    pop = population.load(population_path or Path(body_path).with_name("idea_reach.json"))
     results = []
     for pid in profile_ids or list(library.profiles):
         profile = compose(library, pid)
@@ -59,7 +63,8 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
                 if fx["type"] not in task["fixture_types"]:
                     continue
                 if task["kind"] == "reach":
-                    r = check_reach(profile, body, task, fx, caps)
+                    r = check_reach(profile, body, task, fx, caps,
+                                    pop if profile.mobility_aid == "wheelchair" else None)
                 else:
                     r = check_doorway(profile, body, task, fx)
                 r.room = room["room_id"]
@@ -72,7 +77,7 @@ def _side_joints(names, side):
     return [n if n == "trunk" else f"{n}_{side}" for n in names]
 
 
-def check_reach(profile: ComposedProfile, body, task, fx, caps) -> Result:
+def check_reach(profile: ComposedProfile, body, task, fx, caps, pop=None) -> Result:
     h = fx["position"][2]
     obst = fx.get("obstruction")
     chains = {arm: arm_chain(body, profile, arm) for arm in ("R", "L")}
@@ -117,6 +122,9 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps) -> Result:
                       "angles_deg": r_.angles_deg, "target_local": r_.target, "path_deg": r_.path or []}
                      for a_, arm_, r_ in attempts]
 
+    if pop is not None:
+        _population_check(base, pop, fx, h, obst)
+        return base
     if base.status == "PASS":
         for cap in caps:
             if cap.rule == "target_above_shoulder_height" and h > body.shoulder_height:
@@ -124,6 +132,34 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps) -> Result:
                 base.reason += (f" The target ({h:.2f} m) is above seated shoulder height ({body.shoulder_height:.2f} m): "
                                 f"{cap.notes}")
     return base
+
+
+def _population_check(base, pop, fx, h, obst):
+    """Compare the avatar's answer with measured wheelchair users (IDeA Center). A PASS that fewer than
+    75% of them could manage becomes CAUTION; the share is recorded on every result."""
+    s = population.best_share(pop, fx["approach"], h, obst["depth_m"] if obst else 0.0)
+    base.population_pct = s.pct
+    if base.status != "PASS":
+        return
+    who = (f"{s.pct_measured}% of the {pop['measured']} measured manual wheelchair users who could reach above "
+           f"shoulder height, counting the {pop['recruited'] - pop['measured']} who couldn't as unable "
+           "(IDeA Center, Design Resource #20)")
+    if s.note == "below":
+        base.status = "CAUTION"
+        base.reason += (f" But {h * 39.37:.0f} in is below 16 in, the lowest height the IDeA Center study measured. "
+                        "It found many wheelchair users couldn't safely reach the ADA's 15 in low limit and "
+                        "recommends 28 in instead.")
+    elif s.pct is None:
+        base.status = "CAUTION"
+        base.reason += " But that's farther from the chair than the IDeA Center study measured anyone reaching."
+    elif s.pct < pop["good_design_pct"]:
+        base.status = "CAUTION"
+        base.reason += (f" But only about {s.pct}% of measured wheelchair users could reach this spot "
+                        f"(best case, reaching {_way(s.approach)}): {who}. The study's own line for good design is "
+                        f"{pop['good_design_pct']}%.")
+    else:
+        base.reason += (f" About {s.pct}% of measured wheelchair users could reach it too (reaching {_way(s.approach)}): "
+                        f"{who}.")
 
 
 def _try_arm(chain, body, approach, arm, h, obst):
@@ -209,6 +245,10 @@ def check_doorway(profile: ComposedProfile, body, task, fx) -> Result:
         r.reason += " But the leg data this depends on isn't sourced yet."
         r.flags += [f.message for f in flags]
     return r
+
+
+def _way(approach):
+    return "from the side" if approach == "side" else "straight ahead"
 
 
 def _arm(side):
