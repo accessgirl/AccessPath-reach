@@ -45,7 +45,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 51 tests, ~60 s
+pytest                                                # 53 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -106,7 +106,7 @@ These are in `data/body.json` and the card library, each marked with where it ca
 
 - **AutoCAD/DXF room import.** Rooms are JSON for now (`data/rooms/test_bathroom.json`).
 - **Leg-chain envelopes.** The doorway check uses a width, not a swept leg.
-- **Gait width for canes, crutches and walkers.** For example, the sideways swing of a cane or crutch gait. Each aid needs its own sourced width before doorway and corridor checks can use it.
+- **Hallway widths and gait sweep for canes, crutches and walkers.** Door widths for these aids are in (32 in / 815 mm, U.S. Access Board ADAAG Appendix A4.2.1(2)), with crutches flagged CAUTION under 840 mm (a UK estimate). Hallways need 36 in (915 mm) by the same source, but rooms don't have hallways yet.
 - **Hand/finger cards.**
 - **Using the `strength`, `control` and `dependency_flags` columns.** They're recorded but don't change results yet.
 - **Shoulder rotation and forearm pronation/supination cards.**

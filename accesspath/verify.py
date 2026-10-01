@@ -196,6 +196,10 @@ def check_doorway(profile: ComposedProfile, body, task, fx) -> Result:
         return r
     r.status = "PASS"
     r.reason = f"Clear width {width:.3f} m meets the {need['value']:.3f} m needed ({need['source']})."
+    if need.get("caution_below") and width < need["caution_below"]:
+        r.status = "CAUTION"
+        r.reason += (f" But it is under {need['caution_below']:.3f} m, the width of a person using "
+                     f"{profile.mobility_aid} in another source ({need['caution_source']}).")
     legs = _side_joints(task["joints"], "R") + _side_joints(task["joints"], "L")
     flags = profile.placeholder_flags(legs)
     if flags:

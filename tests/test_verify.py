@@ -37,7 +37,7 @@ def test_stroke_uses_the_unaffected_arm(results):
 
 def test_placeholders_make_passes_unverified(results):
     assert results[("arthritis_both", "outlet_low")].status == "UNVERIFIED"
-    assert results[("crutches_wet_floor", "door_main")].status == "UNVERIFIED"
+    assert results[("crutches_wet_floor", "outlet_low")].status == "UNVERIFIED"  # crutch reach card is a gap
     assert results[("kafo_L", "door_closet")].status == "UNVERIFIED"
     assert results[("kafo_L", "switch_door")].status == "PASS"  # the brace doesn't touch the arm chain
 
@@ -79,3 +79,18 @@ def test_reach_paths_never_pass_through_a_surface(results, library):
                     assert ok(joint_positions(chain, ang)), f"{pid} {fid}: path enters a surface"
             checked += 1
     assert checked >= 5
+
+
+def test_walking_aid_door_widths(results):
+    # ADAAG A4.2.1(2): walking-aid users get through 32 in (0.815 m); the 30 in door is too narrow.
+    assert results[("crutches_wet_floor", "door_main")].status == "FAIL"
+    assert results[("crutches_wet_floor", "door_closet")].status == "PASS"  # 0.86 m clears 0.84 m too
+
+
+def test_crutches_between_the_two_sources_is_caution(library):
+    from accesspath.verify import check_doorway
+    from accesspath.kinematics import load_body
+    from accesspath.profiles import compose
+    p = compose(library, "crutches_wet_floor")
+    r = check_doorway(p, load_body(DATA / "body.json", p.posture), {"task_id": "clear_doorway", "joints": []}, {"id": "d", "clear_width_m": 0.83})
+    assert r.status == "CAUTION" and "0.840" in r.reason
