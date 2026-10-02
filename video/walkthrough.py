@@ -595,11 +595,9 @@ class Story:
                       f"{c['FAIL']} fails. Every one comes with its reason and its source."], draw)
 
     def limits(self):
-        items = [f"This video tests one body size: an average adult, {feet_in(self.bodyjson['height_m'])} tall. "
-                 "The tool can test other heights too.",
+        items = [f"This video tests one body size ({feet_in(self.bodyjson['height_m'])}); the tool can test others.",
                  "Wheelchair seat height and distances are estimates, and marked that way.",
-                 "Not in the library yet: post-polio and many other conditions. For canes, crutches and walkers, "
-                 "only door widths so far.",
+                 "Not in yet: post-polio and many other conditions; for walking aids, only door widths.",
                  "The room is a test room. Importing real floor plans (AutoCAD) comes next."]
 
         def draw(img, t, on):
