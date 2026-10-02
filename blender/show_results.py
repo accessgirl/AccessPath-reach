@@ -59,10 +59,17 @@ def _move(o, coll):
 def build_room(room, results, coll, cutaway=()):
     """`cutaway` walls are drawn knee-high so a still image can see into the room."""
     wall_mat = material("wall", (0.85, 0.85, 0.82, 1))
+    xs = [v for w in room["walls"] for v in (w[0], w[2])]
+    ys = [v for w in room["walls"] for v in (w[1], w[3])]
+    centre = Vector(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, 0))
     for i, (x1, y1, x2, y2) in enumerate(room["walls"]):
         h = 0.3 if i in cutaway else room.get("wall_height", 2.4)
         a, b = Vector((x1, y1, 0)), Vector((x2, y2, 0))
-        o = box(f"wall_{i}", (a + b) / 2 + Vector((0, 0, h / 2)), ((b - a).length, 0.05, h), wall_mat, coll)
+        # The wall's inside face sits on the wall line, where the verifier puts it; its thickness goes outward.
+        out = Vector((-(b - a).y, (b - a).x, 0)).normalized()
+        if out.dot((a + b) / 2 - centre) < 0:
+            out = -out
+        o = box(f"wall_{i}", (a + b) / 2 + out * 0.025 + Vector((0, 0, h / 2)), ((b - a).length, 0.05, h), wall_mat, coll)
         o.rotation_euler.z = math.atan2(y2 - y1, x2 - x1)
     floor = box("floor", (1.2, 1.5, -0.01), (2.6, 3.2, 0.02), material("floor", (0.6, 0.58, 0.55, 1)), coll)
     floor.name = "floor"
@@ -127,14 +134,19 @@ def place_avatar(base, result, fx, coll):
     base_xy = fx_pos - rot @ Vector((t.x, t.y, 0))
     obj.location = (base_xy.x, base_xy.y, base.location.z)
     obj.rotation_euler = (0, 0, ang)
-    a = {k: math.radians(v) for k, v in result["angles_deg"].items()}
+    pose_arm(obj, arm, result["angles_deg"])
+    return obj
+
+
+def pose_arm(obj, arm, angles_deg):
+    """Set the trunk and one arm to joint angles named as the reach chain names them."""
+    a = {k: math.radians(v) for k, v in angles_deg.items()}
     obj.pose.bones["trunk"].rotation_euler.x = a.get("trunk_flex", 0)
     sh = obj.pose.bones[f"shoulder_{arm}"]
     sh.rotation_euler.x = a.get(f"shoulder_{arm}_flex", 0)
     sh.rotation_euler.z = a.get(f"shoulder_{arm}_abd", 0) * (-1 if arm == "R" else 1)
     obj.pose.bones[f"elbow_{arm}"].rotation_euler.x = a.get(f"elbow_{arm}_flex", 0)
     obj.pose.bones[f"wrist_{arm}"].rotation_euler.x = a.get(f"wrist_{arm}_flex", 0)
-    return obj
 
 
 def stick_figure(obj, coll, mat):
