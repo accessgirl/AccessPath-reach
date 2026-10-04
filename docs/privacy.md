@@ -8,7 +8,7 @@ AccessPath is split into parts that never mix:
 | **Client vault** (not built yet) | Which nickname a client code belongs to, on the computer where the envelope was made | Only that computer, encrypted, never sent anywhere |
 | **Account** (not built yet) | Name, contact details and a non-medical job scope, for contractor matching | AccessPath's servers; never linked to a nickname, code or envelope |
 
-The random client code is the only link between them.
+The random client code links the engine to the vault, and nothing else. The account holds no code, nickname or envelope, so nothing on AccessPath's servers connects a name to a body.
 
 ## Intake: two steps (decided Oct 4, 2026)
 
