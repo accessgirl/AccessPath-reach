@@ -10,6 +10,8 @@
     {"task_id": "reach_shelf", "kind": "reach", "fixture_types": ["shelf"],
      "joints": ["trunk", "shoulder", "elbow", "wrist", "hand"],
      "description": "Touch the front edge of the shelf with a fingertip"},
+    {"task_id": "pull_under", "kind": "knee_clearance", "fixture_types": ["sink", "counter"], "joints": [],
+     "description": "Pull in facing the sink or counter with knees underneath (wheelchair users only)"},
     {"task_id": "clear_doorway", "kind": "clearance", "fixture_types": ["door"],
      "joints": ["hip", "knee", "ankle"],
      "description": "Pass through the doorway's clear opening"}

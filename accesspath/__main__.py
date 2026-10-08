@@ -9,6 +9,7 @@ from .cards import load_library, LibraryError
 from .kinematics import load_body, arm_chain, envelope
 from .profiles import compose
 from .verify import run, load_json, summary_table, to_json
+from . import seated_size
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -21,6 +22,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("check-cards", help="check the card spreadsheet and list what is still unsourced")
+    sub.add_parser("check-avatar", help="compare the seated avatar with measured wheelchair users")
 
     c = sub.add_parser("compose", help="joint limits for a profile, as JSON (Blender's apply_profile.py reads this)")
     c.add_argument("profile")
@@ -56,6 +58,15 @@ def main(argv=None):
             print("\nStill needs a source:")
             for c in todo:
                 print(f"  {c.card_id}: {c.condition}, {c.joint_id} {c.DOF_axis}")
+        return 0
+
+    if a.cmd == "check-avatar":
+        size = seated_size.load(Path(a.body).with_name("wheelchair_size.json"))
+        heights = [("default body", None)] + [(f"band {b.band_id} ({b.label}), shortest", b.stature_min_in * 0.0254)
+                                              for b in lib.bands.values()]
+        for label, h in heights:
+            body = load_body(a.body, "seated_wheelchair", h)
+            print(f"{label}: {seated_size.shoulder_report(size, body.shoulder_height)}")
         return 0
 
     if a.cmd == "compose":

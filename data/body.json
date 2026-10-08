@@ -45,7 +45,9 @@
   },
   "doorway_clear_width_m": {
     "_about": "Clear width a door needs for each mobility aid. null = not sourced yet, so doorway results for that aid are UNVERIFIED.",
-    "wheelchair": {"value": 0.815, "source": "ADA 2010 Standards 404.2.3: 32 in (815 mm) minimum clear width", "status": "sourced"},
+    "wheelchair": {"value": 0.815, "source": "ADA 2010 Standards 404.2.3: 32 in (815 mm) minimum clear width", "status": "sourced",
+                   "caution_below": 0.852, "caution_why": "and about 1 in 20 measured wheelchair users are wider than that with their chair (95th percentile 85.2 cm for women, 83.9 cm for men; up to 90.6 cm in power chairs)",
+                   "caution_source": "Paquet & Feathers 2004, Int J Ind Ergon 33:191-204, Tables 4 and 5, overall breadth of person and chair"},
     "none": {"value": 0.54, "source": "Shoulder width (0.259 x height) + 0.05 m each side", "status": "interpolated"},
     "KAFO": {"value": 0.54, "source": "Same as 'none'; the circumduction card adds the leg swing once it is sourced", "status": "interpolated"},
     "crutches": {"value": 0.815, "source": "U.S. Access Board, ADAAG (2002) Appendix A4.2.1(2): people who use walking aids can maneuver through clear width openings of 32 in (815 mm); they need 36 in (915 mm) for passageways", "status": "sourced",

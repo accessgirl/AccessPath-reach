@@ -16,7 +16,7 @@ from .cards import Library
 from .kinematics import load_body, arm_chain, reach
 from .profiles import compose, ComposedProfile
 from .privacy import check_tree
-from . import population
+from . import population, seated_size
 
 RANK = {"FAIL": 3, "UNVERIFIED": 2, "CAUTION": 1, "PASS": 0}
 TOUCH_TOL = 0.01  # the fingertip may touch the wall surface
@@ -51,6 +51,7 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
         population_path=None):
     check_tree(room, f"room {room.get('room_id', '?')}")
     pop = population.load(population_path or Path(body_path).with_name("idea_reach.json"))
+    size = seated_size.load(Path(body_path).with_name("wheelchair_size.json"))
     results = []
     for pid in profile_ids or list(library.profiles):
         profile = compose(library, pid)
@@ -65,6 +66,10 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
                 if task["kind"] == "reach":
                     r = check_reach(profile, body, task, fx, caps,
                                     pop if profile.mobility_aid == "wheelchair" else None)
+                elif task["kind"] == "knee_clearance":
+                    if profile.mobility_aid != "wheelchair":
+                        continue  # knee space is about pulling in seated
+                    r = check_knee_space(profile, task, fx, size)
                 else:
                     r = check_doorway(profile, body, task, fx)
                 r.room = room["room_id"]
@@ -236,14 +241,26 @@ def check_doorway(profile: ComposedProfile, body, task, fx) -> Result:
     r.reason = f"Clear width {width:.3f} m meets the {need['value']:.3f} m needed ({need['source']})."
     if need.get("caution_below") and width < need["caution_below"]:
         r.status = "CAUTION"
-        r.reason += (f" But it is under {need['caution_below']:.3f} m, the width of a person using "
-                     f"{profile.mobility_aid} in another source ({need['caution_source']}).")
+        why = need.get("caution_why") or f"the width of a person using {profile.mobility_aid} in another source"
+        r.reason += f" But it is under {need['caution_below']:.3f} m, {why} ({need['caution_source']})."
     legs = _side_joints(task["joints"], "R") + _side_joints(task["joints"], "L")
     flags = profile.placeholder_flags(legs)
     if flags:
         r.status = "UNVERIFIED"
         r.reason += " But the leg data this depends on isn't sourced yet."
         r.flags += [f.message for f in flags]
+    return r
+
+
+def check_knee_space(profile: ComposedProfile, task, fx, size) -> Result:
+    r = Result("", profile.profile_id, task["task_id"], fx["id"], "", "")
+    if size is None:
+        r.status, r.reason = "UNVERIFIED", "No measured wheelchair-user sizes loaded (data/wheelchair_size.json)."
+    elif fx.get("knee_clearance_m") is None:
+        r.status = "UNVERIFIED"
+        r.reason = "The room file doesn't give the height of the knee space under this fixture."
+    else:
+        r.status, r.reason = seated_size.knee_check(size, fx["knee_clearance_m"])
     return r
 
 

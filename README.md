@@ -18,7 +18,7 @@ Each avatar is built from **joint cards** (baseline range of motion plus conditi
 | 2. Card library | Done. The spreadsheet is the source of truth; editing one row changes the results, with no rig changes | `data/card_library.xlsx`, `accesspath/cards.py` |
 | 3. Profile composer | Done. A profile name produces a constrained copy of the rig | `accesspath/profiles.py`, `blender/apply_profile.py` |
 | 4. Envelope generation | Done for the arm chain (trunk lean, shoulder, elbow, wrist) using IKPy. Point cloud exports as `.ply` | `accesspath/kinematics.py` |
-| 5. Task chain | Done. 4 tasks: outlet, light switch, shelf, doorway | `data/tasks.json` |
+| 5. Task chain | Done. 5 tasks: outlet, light switch, shelf, doorway, knee space under a sink or counter | `data/tasks.json` |
 | 6. Floor-plan test | Done for a JSON room, viewable in Blender. **AutoCAD/DXF import is not built yet.** | `accesspath/verify.py`, `blender/show_results.py` |
 
 The Blender skeleton and the IKPy reach chain are tested against each other: for the same joint angles they put the fingertip in the same place, to 0.1 mm.
@@ -28,7 +28,7 @@ The Blender skeleton and the IKPy reach chain are tested against each other: for
 | Result | Meaning |
 |---|---|
 | **PASS** | The avatar can do it, using only sourced or interpolated data |
-| **CAUTION** | The avatar can do it, but measured data says many real people in this group can't. For wheelchair profiles: fewer than 75% of the IDeA Center's measured manual wheelchair users could reach that spot (`data/idea_reach.json`, see below) |
+| **CAUTION** | The avatar can do it, but measured data says many real people in this group can't. For wheelchair profiles: fewer than 75% of the IDeA Center's measured manual wheelchair users could reach that spot (`data/idea_reach.json`); a door narrower than the widest 5% of measured users with their chair; or knee space that fits a typical user's knees but not the tallest (see below) |
 | **UNVERIFIED** | The avatar can do it only because able-bodied values stood in for data that isn't sourced yet. The real answer may be FAIL |
 | **FAIL** | The avatar can't do it, even with able-bodied values standing in for missing data |
 
@@ -41,11 +41,12 @@ Needs Python 3.10+.
 ```
 pip install -e ".[test]"
 python -m accesspath check-cards                      # check the spreadsheet, list what still needs a source
+python -m accesspath check-avatar                     # the seated avatar's shoulder vs measured wheelchair users
 python -m accesspath verify                           # every profile x task in the test bathroom
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 82 tests, ~2 min
+pytest                                                # 94 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -86,6 +87,15 @@ The avatar answers "can this person reach it?". For wheelchair profiles the veri
 - It's the cautious reading: the 41 of 276 people who couldn't reach above shoulder height weren't measured, and are counted as unable. Between chart cells, the farther cell is used.
 - An avatar PASS becomes CAUTION when that share is under 75%, the study's own line for good design, or when the target is below 16 in (not measured; the study recommends 28 in as a low limit).
 - The data is for manual chairs and a light object. Power chairs and scooters reach less straight ahead (D'Souza et al., RESNA 2009), so treat these figures as a best case for them.
+
+## Checking size against measured wheelchair users
+
+`data/wheelchair_size.json` holds a few values from Paquet & Feathers (2004): 121 U.S. wheelchair users measured seated in their own chairs, manual and power (Int J Ind Ergon 33:191-204, Tables 4 and 5).
+
+- **Seated shoulder.** `check-avatar` and a test place the avatar's seated shoulder among them. Every body size tested falls inside the measured 5th-95th percentile range (91.3-114.0 cm). Even the shortest band (4 ft 11 in) puts it at 100.2 cm, right at the median woman (99.6-100.5 cm), so for the shorter half of women in chairs the avatar reaches high. The IDeA check above is what covers them.
+- **Doors.** A wheelchair door that meets the ADA 32 in (0.815 m) but is under 0.852 m is CAUTION: about 1 in 20 measured users are wider than that with their chair (95th percentile 85.2 cm for women, 83.9 cm for men; power chairs up to 90.6 cm).
+- **Knee space.** The `pull_under` task (wheelchair profiles only) reads a sink or counter's `knee_clearance_m`, the height of the open space underneath. PASS at or above the tallest 95th-percentile seated knee height (74.8 cm); FAIL below the lowest median (61.4 cm); CAUTION between. The ADA's 27 in (685 mm) knee-clearance height lands in CAUTION.
+- **Caveats (the authors'):** 46% of the sample used power chairs (about 7% nationally), and it wasn't representative by sex, chair or disability.
 
 ## Editing the card library
 

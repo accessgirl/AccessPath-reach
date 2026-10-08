@@ -10,6 +10,8 @@
     {"id": "outlet_counter", "type": "outlet", "position": [1.8, 3.0, 1.07], "wall_normal": [0, -1],
      "approach": ["forward", "side"], "obstruction": {"depth_m": 0.60, "height_m": 0.86},
      "note": "Above a 0.60 m deep vanity counter"},
+    {"id": "sink_vanity", "type": "sink", "position": [1.8, 3.0, 0.86], "wall_normal": [0, -1], "knee_clearance_m": 0.69,
+     "note": "Vanity sink, 34 in rim, open knee space 27 in high: the ADA knee-clearance height"},
     {"id": "switch_door", "type": "light_switch", "position": [2.4, 0.5, 1.22], "wall_normal": [-1, 0],
      "approach": ["forward", "side"], "note": "48 in: ADA high reach limit"},
     {"id": "shelf_high", "type": "shelf", "position": [0.0, 1.5, 1.70], "wall_normal": [1, 0],
