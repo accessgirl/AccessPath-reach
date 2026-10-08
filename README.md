@@ -45,7 +45,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 81 tests, ~2 min
+pytest                                                # 82 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)

@@ -44,7 +44,7 @@ def test_dial_outside_the_band_is_rejected(tmp_path):
 
 def test_placeholder_cannot_be_dialled(tmp_path):
     with pytest.raises(LibraryError, match="can't be dialled"):
-        with_profile(tmp_path, "arthritis-shoulder-flex@90")
+        with_profile(tmp_path, "arthritis-shoulder-abd@90")
 
 
 def test_band_tests_reach_at_its_shortest_height(tmp_path):
