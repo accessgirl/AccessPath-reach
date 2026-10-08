@@ -20,7 +20,7 @@ def edited(tmp_path, card_id, **changes):
 
 
 def test_real_library_loads(library):
-    assert len(library.cards) == 36
+    assert len(library.cards) == 38
     assert {c.status for c in library.cards.values()} == {"sourced", "interpolated", "placeholder"}
     assert "stroke_R_moderate" in library.profiles
 
@@ -37,7 +37,7 @@ def test_dash_in_number_column_is_explained(tmp_path):
 
 def test_placeholder_with_numbers_is_rejected(tmp_path):
     with pytest.raises(LibraryError, match="placeholder but has numbers"):
-        load_library(edited(tmp_path, "arthritis-shoulder-flex", ROM_max_deg=120))
+        load_library(edited(tmp_path, "arthritis-shoulder-abd", ROM_max_deg=120))
 
 
 def test_sourced_needs_a_citation(tmp_path):
@@ -46,6 +46,6 @@ def test_sourced_needs_a_citation(tmp_path):
 
 
 def test_filling_a_placeholder(tmp_path):
-    lib = load_library(edited(tmp_path, "arthritis-shoulder-flex", ROM_max_deg=120,
+    lib = load_library(edited(tmp_path, "arthritis-shoulder-abd", ROM_max_deg=120,
                               status="sourced", source="Example et al. 2027"))
-    assert lib.cards["arthritis-shoulder-flex"].ROM_max_deg == 120
+    assert lib.cards["arthritis-shoulder-abd"].ROM_max_deg == 120

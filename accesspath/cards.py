@@ -4,6 +4,9 @@ import json
 
 import openpyxl
 
+from .isncsci import parse_sci_name
+from .privacy import check_fields, IdentifyingDataError
+
 STATUSES = {"sourced", "interpolated", "placeholder"}
 RANGE_KINDS = {"joint_limits", "score_band", "task_threshold", "sweep_width", "envelope_shift", "reach_reduction"}
 POSTURES = {"standing", "seated_wheelchair"}
@@ -32,6 +35,7 @@ class Card:
     notes: str | None
     source: str | None
     status: str
+    ISB_term: str | None = None
 
     @property
     def is_baseline(self):
@@ -46,6 +50,20 @@ class Profile:
     mobility_aid: str
     affected_side: str
     card_ids: list[str] = field(default_factory=list)
+    settings: dict[str, float] = field(default_factory=dict)  # card_id -> value dialled in within its band
+    body_band: str | None = None
+    body_height_in: float | None = None  # dialled in within the body band
+
+
+@dataclass
+class BodyBand:
+    """A height range treated as one group. Reach is tested at the shortest height, room at the tallest."""
+    band_id: str
+    label: str
+    stature_min_in: float
+    stature_max_in: float
+    source: str | None
+    status: str
 
 
 @dataclass
@@ -64,12 +82,14 @@ class Library:
     cards: dict[str, Card]
     profiles: dict[str, Profile]
     caps: list[PopulationCap]
+    bands: dict[str, BodyBand] = field(default_factory=dict)
 
     def to_json(self):
         return json.dumps({
             "cards": [asdict(c) for c in self.cards.values()],
             "profiles": [asdict(p) for p in self.profiles.values()],
             "population_caps": [asdict(c) for c in self.caps],
+            "body_bands": [asdict(b) for b in self.bands.values()],
         }, indent=2)
 
 
@@ -128,19 +148,52 @@ def load_library(path) -> Library:
             range_kind=row["range_kind"], strength=row.get("strength"), control=row.get("control"),
             laterality=row.get("laterality"), dependency_flags=row.get("dependency_flags"),
             notes=row.get("notes"), source=row.get("source"), status=row["status"],
+            ISB_term=row.get("ISB_term"),
         )
         _check_card(card, where)
         cards[cid] = card
 
+    bands: dict[str, BodyBand] = {}
+    if "Body Bands" in wb.sheetnames:
+        for n, row in _rows(wb, "Body Bands"):
+            where = f"Body Bands row {n}"
+            _need(row, ["band_id", "stature_min_in", "stature_max_in", "source", "status"], where)
+            b = BodyBand(str(row["band_id"]), row.get("label") or "",
+                         _number(row["stature_min_in"], where, "stature_min_in"),
+                         _number(row["stature_max_in"], where, "stature_max_in"), row.get("source"), row["status"])
+            if b.stature_min_in is None or b.stature_max_in is None or b.stature_min_in > b.stature_max_in:
+                raise LibraryError(f"{where}: needs stature_min_in <= stature_max_in.")
+            if b.status not in STATUSES:
+                raise LibraryError(f"{where}: status '{b.status}' should be one of {sorted(STATUSES)}.")
+            bands[b.band_id] = b
+
+    if "Profiles" in wb.sheetnames:
+        try:
+            check_fields([c.value for c in wb["Profiles"][1]], "Profiles sheet")
+        except IdentifyingDataError as err:
+            raise LibraryError(str(err))
     profiles: dict[str, Profile] = {}
     for n, row in _rows(wb, "Profiles"):
         where = f"Profiles row {n}"
         _need(row, ["profile_id", "posture", "mobility_aid", "affected_side", "card_ids"], where)
-        ids = [c.strip() for c in (row["card_ids"] or "").split(",") if c.strip()]
+        ids, settings = [], {}
+        for item in (c.strip() for c in (row["card_ids"] or "").split(",") if c.strip()):
+            cid, _, dial = item.partition("@")
+            cid = cid.strip()
+            ids.append(cid)
+            if dial.strip():
+                settings[cid] = _number(dial.strip(), where, f"setting for '{cid}'")
         p = Profile(row["profile_id"], row.get("description") or "", row["posture"],
-                    row["mobility_aid"], str(row["affected_side"]), ids)
+                    row["mobility_aid"], str(row["affected_side"]), ids, settings,
+                    str(row["body_band"]) if row.get("body_band") else None,
+                    _number(row.get("body_height_in"), where, "body_height_in"))
         if p.profile_id in profiles:
             raise LibraryError(f"{where}: profile_id '{p.profile_id}' is used twice.")
+        if p.profile_id.upper().startswith("SCI"):
+            try:
+                parse_sci_name(p.profile_id)
+            except ValueError as err:
+                raise LibraryError(f"{where}: {err}")
         if p.posture not in POSTURES:
             raise LibraryError(f"{where}: posture '{p.posture}' should be one of {sorted(POSTURES)}.")
         if p.affected_side not in SIDES:
@@ -150,6 +203,15 @@ def load_library(path) -> Library:
                 raise LibraryError(f"{where}: card_id '{cid}' is not on the Cards sheet.")
             if cards[cid].is_baseline:
                 raise LibraryError(f"{where}: '{cid}' is a baseline card; baseline cards are always applied, list only condition cards.")
+        for cid, v in p.settings.items():
+            _check_setting(cards[cid], v, where)
+        if p.body_band is not None and p.body_band not in bands:
+            raise LibraryError(f"{where}: body_band '{p.body_band}' is not on the Body Bands sheet.")
+        if p.body_height_in is not None and p.body_band is not None:
+            b = bands[p.body_band]
+            if not b.stature_min_in <= p.body_height_in <= b.stature_max_in:
+                raise LibraryError(f"{where}: body_height_in {p.body_height_in:g} is outside band {b.band_id} "
+                                   f"({b.stature_min_in:g} to {b.stature_max_in:g} in). Pick the band it falls in.")
         if ids and p.affected_side == "none":
             raise LibraryError(f"{where}: lists condition cards but affected_side is 'none'.")
         profiles[p.profile_id] = p
@@ -161,7 +223,23 @@ def load_library(path) -> Library:
             caps.append(PopulationCap(row["cap_id"], row["applies_to_posture"], row["rule"],
                                       _number(row["value"], where, "value"), row.get("notes"),
                                       row.get("source"), row["status"]))
-    return Library(cards, profiles, caps)
+    return Library(cards, profiles, caps, bands)
+
+
+def band_edges(card: Card):
+    """The range a card's value may be dialled within: its band for a score band, 0 to its max for a joint limit."""
+    if card.range_kind == "score_band":
+        return card.ROM_min_deg, card.ROM_max_deg
+    return (card.ROM_min_deg or 0.0), card.ROM_max_deg
+
+
+def _check_setting(card: Card, v, where):
+    if card.status == "placeholder" or card.range_kind not in ("joint_limits", "score_band"):
+        raise LibraryError(f"{where}: '{card.card_id}' can't be dialled in: it has no sourced range to dial within.")
+    lo, hi = band_edges(card)
+    if lo is None or hi is None or not lo <= v <= hi:
+        raise LibraryError(f"{where}: setting {v:g} for '{card.card_id}' is outside its range "
+                           f"({lo:g} to {hi:g} degrees).")
 
 
 def _check_card(c: Card, where):

@@ -37,11 +37,20 @@
     "seated_wheelchair": {"forward": 0.60, "side": 0.33},
     "_note": "Standing forward: toes at the wall. Wheelchair forward: footrests at the wall. Wheelchair side: side of the chair ~0.1 m from the wall, which is inside the ADA 308.3 side-reach 10 in (255 mm) limit."
   },
+  "limb_clearance_m": {
+    "value": 0.035,
+    "_about": "How far the centre line of the arm (shoulder to wrist) must stay from a wall or counter. The arm has thickness; only the hand may touch the surface.",
+    "_note": "About half the thickness of an adult forearm. Estimate: replace with a sourced forearm/upper-arm breadth.",
+    "_status": "interpolated"
+  },
   "doorway_clear_width_m": {
     "_about": "Clear width a door needs for each mobility aid. null = not sourced yet, so doorway results for that aid are UNVERIFIED.",
     "wheelchair": {"value": 0.815, "source": "ADA 2010 Standards 404.2.3: 32 in (815 mm) minimum clear width", "status": "sourced"},
     "none": {"value": 0.54, "source": "Shoulder width (0.259 x height) + 0.05 m each side", "status": "interpolated"},
     "KAFO": {"value": 0.54, "source": "Same as 'none'; the circumduction card adds the leg swing once it is sourced", "status": "interpolated"},
-    "crutches": {"value": null, "source": "NEEDED: not yet sourced (crutch gait width)", "status": "placeholder"}
+    "crutches": {"value": 0.815, "source": "U.S. Access Board, ADAAG (2002) Appendix A4.2.1(2): people who use walking aids can maneuver through clear width openings of 32 in (815 mm); they need 36 in (915 mm) for passageways", "status": "sourced",
+                 "caution_below": 0.84, "caution_source": "First In Architecture, Metric Data 04: width of a person with crutches 840 mm (UK averages, no study named; estimate)"},
+    "cane": {"value": 0.815, "source": "U.S. Access Board, ADAAG (2002) Appendix A4.2.1(2): people who use walking aids can maneuver through clear width openings of 32 in (815 mm)", "status": "sourced"},
+    "walker": {"value": 0.815, "source": "U.S. Access Board, ADAAG (2002) Appendix A4.2.1(2): people who use walking aids can maneuver through clear width openings of 32 in (815 mm)", "status": "sourced"}
   }
 }

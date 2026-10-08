@@ -8,7 +8,7 @@
     {"id": "outlet_low", "type": "outlet", "position": [0.6, 3.0, 0.30], "wall_normal": [0, -1],
      "approach": ["forward", "side"], "note": "12 in: common residential height, below the ADA 15 in low reach"},
     {"id": "outlet_counter", "type": "outlet", "position": [1.8, 3.0, 1.07], "wall_normal": [0, -1],
-     "approach": ["forward"], "obstruction": {"depth_m": 0.60, "height_m": 0.86},
+     "approach": ["forward", "side"], "obstruction": {"depth_m": 0.60, "height_m": 0.86},
      "note": "Above a 0.60 m deep vanity counter"},
     {"id": "switch_door", "type": "light_switch", "position": [2.4, 0.5, 1.22], "wall_normal": [-1, 0],
      "approach": ["forward", "side"], "note": "48 in: ADA high reach limit"},
