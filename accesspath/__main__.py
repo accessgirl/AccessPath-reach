@@ -5,7 +5,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from .cards import load_library, LibraryError
+from .cards import load_library, LibraryError, SMALL_STUDY
 from .kinematics import load_body, arm_chain, envelope
 from .profiles import compose
 from .verify import run, load_json, summary_table, to_json
@@ -68,9 +68,12 @@ def main(argv=None):
             ("Source not re-opened in the last year (or never):", [c for c in used if c.is_stale()]),
             ("Where in the source the number appears isn't recorded:",
              [c for c in used if not c.source_location or c.source_location.startswith(("not recorded", "none"))]),
-            ("Non-commercial or subscription licence (cite the number only):",
-             [c for c in used if c.access_license and ("NON-COMMERCIAL" in c.access_license.upper()
-                                                       or "SUBSCRIPTION" in c.access_license.upper())]),
+            (f"Small study (fewer than {SMALL_STUDY} people):",
+             [c for c in used if c.sample_size is not None and c.sample_size < SMALL_STUDY]),
+            ("Study size not recorded (textbook values excepted):",
+             [c for c in used if c.sample_size is None and c.status == "sourced" and not c.is_baseline]),
+            ("Eyes only: the source isn't open for commercial use (kept, not thrown out; cite the number only):",
+             [c for c in used if c.eyes_only]),
         ]:
             if rows:
                 print(f"\n{title}")

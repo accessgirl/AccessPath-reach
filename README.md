@@ -46,7 +46,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 100 tests, ~2 min
+pytest                                                # 101 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -103,6 +103,7 @@ Rules added Nov 8, 2026 after a business coach's review, on top of the existing 
 
 - **Each card records its source in full.** The `source_type` column says what kind of source it is: study, review quoting a study, textbook or standard. `source_location` gives the page or table where the number appears. `access_license` says how the paper may be used (open access isn't the same as commercially usable). `last_checked` is when a person last opened it, and `independent_sources` counts the sources. `contested_note` records any source that disagrees.
 - **Verified means at least 5 independent sources agree** (Heather's rule). A review quoting a study counts as that study, not a new one. A source that disagrees still counts, and makes the card *contested*: the card shows each number instead of averaging them. Today no card is verified yet. `python -m accesspath check-cards` lists which cards are contested, which haven't been re-checked within a year, which have no page or table recorded, and which come from non-commercial or subscription papers.
+- **Eyes only.** Cards whose source is subscription-only or non-commercial are kept, never thrown out, but labelled eyes only: the number is cited and nothing from the source is shown to customers. check-cards lists them, and each result's inputs say so (`eyes_only`). Study size (`sample_size`) and who checked it (`checked_by`) are recorded too; under 30 people is flagged as a small study.
 - **Every reach result lists the values it rests on** (`inputs` in the JSON output): each joint limit on the arm used, with its card, status and evidence, plus the body height, seat height and trunk lean, marked as estimates where they are.
 - **Changelog.** The card library's Changelog sheet records every change to a number or source: date, card, old and new value, the source that triggered it, and who checked it. Old values stay visible.
 - **Software and data licences** are logged in [docs/components.md](docs/components.md).

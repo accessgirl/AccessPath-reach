@@ -126,7 +126,7 @@ def _note(out, joint, card: Card, value):
     if card.DOF_axis in AXES and value is not None:
         out.provenance[f"{joint} {card.DOF_axis}"] = {
             "value_deg": float(value), "card_id": card.card_id, "status": card.status,
-            "evidence": card.evidence, "source": card.source}
+            "evidence": card.evidence, "eyes_only": card.eyes_only, "source": card.source}
 
 
 def _set(limits, joint, axis_name, value):

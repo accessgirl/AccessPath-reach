@@ -83,3 +83,10 @@ def test_changelog_sheet_keeps_old_values():
     rows = list(wb["Changelog"].iter_rows(values_only=True))
     assert rows[0][:4] == ("date", "card_id", "what changed", "old value")
     assert any(r[3] == "0.21 (no source found)" for r in rows)
+
+
+def test_eyes_only_cards_are_kept_and_labelled(library):
+    eyes = {c.card_id for c in library.cards.values() if c.eyes_only}
+    assert {"stroke-shoulder-flex-milder", "arthritis-shoulder-flex"} <= eyes  # CC BY-NC-ND; Elsevier subscription
+    assert "stroke-shoulder-flex-weak" not in eyes  # CC BY 4.0
+    assert library.cards["stroke-shoulder-flex-weak"].sample_size == 8  # small study, flagged by check-cards

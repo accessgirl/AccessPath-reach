@@ -10,7 +10,8 @@ from .privacy import check_fields, IdentifyingDataError
 
 STATUSES = {"sourced", "interpolated", "placeholder"}
 VERIFIED_SOURCES = 5  # Heather's rule: a number is verified when at least 5 independent sources agree
-STALE_DAYS = 365  # check-cards flags a card whose source hasn't been re-opened in this long
+STALE_DAYS = 365
+SMALL_STUDY = 30  # Oct 1 QC rule: fewer people than this is flagged as a small study  # check-cards flags a card whose source hasn't been re-opened in this long
 RANGE_KINDS = {"joint_limits", "score_band", "task_threshold", "sweep_width", "envelope_shift", "reach_reduction"}
 POSTURES = {"standing", "seated_wheelchair"}
 SIDES = {"R", "L", "both", "none"}
@@ -45,6 +46,8 @@ class Card:
     last_checked: str | None = None  # YYYY-MM-DD a person last opened the source and confirmed the number
     independent_sources: int = 0
     contested_note: str | None = None
+    sample_size: int | None = None  # people the source measured; under SMALL_STUDY is flagged
+    checked_by: str | None = None
 
     @property
     def is_baseline(self):
@@ -58,6 +61,13 @@ class Card:
         if self.independent_sources >= VERIFIED_SOURCES:
             return "verified"
         return f"{self.independent_sources} of {VERIFIED_SOURCES} sources"
+
+    @property
+    def eyes_only(self):
+        """Source isn't open for commercial use (subscription or non-commercial licence). Kept, never thrown out,
+        but for AccessPath's own eyes: the number is cited, nothing from the source is shown to customers."""
+        lic = (self.access_license or "").upper()
+        return "NON-COMMERCIAL" in lic or "SUBSCRIPTION" in lic
 
     def is_stale(self, today=None):
         """Not confirmed against its source within STALE_DAYS (or never)."""
@@ -190,6 +200,8 @@ def load_library(path) -> Library:
             access_license=row.get("access_license"), last_checked=_day(row.get("last_checked"), where),
             independent_sources=int(_number(row.get("independent_sources"), where, "independent_sources") or 0),
             contested_note=row.get("contested_note"),
+            sample_size=None if row.get("sample_size") is None else int(_number(row["sample_size"], where, "sample_size")),
+            checked_by=row.get("checked_by"),
         )
         _check_card(card, where)
         cards[cid] = card
