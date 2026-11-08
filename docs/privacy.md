@@ -36,6 +36,8 @@ Under HIPAA, a company that receives, stores or transmits patient information fo
 
 So the protection comes from patient information **never reaching AccessPath's systems**, not from locking it once it's there.
 
+**Scope (Heather, Nov 8, 2026):** this wall covers AccessPath, the design and build feasibility tool, which is version 1. Later uses of the same method that need medical data (occupational therapy documentation, injury cases) are separate products. Each is its own decision, made only with funding and a HIPAA-grade security layer in place first. None of them changes the rules above for AccessPath.
+
 ## Open questions for a lawyer (before the first health-care customer)
 
 - Do functional numbers under a random code count as de-identified under HIPAA's de-identification standard, so a hosted engine could process them?
