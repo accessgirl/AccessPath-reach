@@ -53,6 +53,5 @@ Added Nov 8, 2026 (business coach review):
 - On jobs paid with Medicaid waiver money, could a finder's fee cross anti-kickback rules?
 - Several card numbers come from papers that are subscription-only or under a non-commercial licence (CC BY-NC-ND). Citing a number (a fact) is not copying text or figures, but is it fine in a paid product? (`python -m accesspath check-cards` lists the cards.)
 - Blender is GPL-3.0 and MakeHuman's program is AGPL-3.0 (see docs/components.md). What can be shipped or hosted without publishing AccessPath's own code?
-- For family money: the lawyer drafts for both sides. Confirm in writing that he's drafting, not advising either.
 
 This is general information, not legal advice.
