@@ -98,3 +98,14 @@ def test_crutches_between_the_two_sources_is_caution(library):
     p = compose(library, "crutches_wet_floor")
     r = check_doorway(p, load_body(DATA / "body.json", p.posture), {"task_id": "clear_doorway", "joints": []}, {"id": "d", "clear_width_m": 0.83})
     assert r.status == "CAUTION" and "0.840" in r.reason
+
+
+def test_every_reach_result_lists_the_values_it_rests_on(results):
+    r = results[("stroke_R_severe", "shelf_high")]
+    names = {i["input"] for i in r.inputs}
+    assert {"shoulder_L flexion", "elbow_L flexion", "trunk flexion", "body height"} <= names
+    shoulder = next(i for i in r.inputs if i["input"] == "shoulder_L flexion")
+    assert shoulder["card_id"] == "base-shoulder_L-flex" and shoulder["evidence"] == "contested"
+    wc = results[("baseline_wheelchair", "shelf_high")]
+    lean = next(i for i in wc.inputs if i["input"] == "trunk lean allowed")
+    assert lean["status"] == "interpolated"  # an estimate, and the result says so

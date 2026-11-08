@@ -1,5 +1,6 @@
 """Card library: load the spreadsheet (the source of truth) and check it before anything uses it."""
 from dataclasses import dataclass, field, asdict
+from datetime import date, datetime
 import json
 
 import openpyxl
@@ -8,6 +9,8 @@ from .isncsci import parse_sci_name
 from .privacy import check_fields, IdentifyingDataError
 
 STATUSES = {"sourced", "interpolated", "placeholder"}
+VERIFIED_SOURCES = 5  # Heather's rule: a number is verified when at least 5 independent sources agree
+STALE_DAYS = 365  # check-cards flags a card whose source hasn't been re-opened in this long
 RANGE_KINDS = {"joint_limits", "score_band", "task_threshold", "sweep_width", "envelope_shift", "reach_reduction"}
 POSTURES = {"standing", "seated_wheelchair"}
 SIDES = {"R", "L", "both", "none"}
@@ -36,10 +39,33 @@ class Card:
     source: str | None
     status: str
     ISB_term: str | None = None
+    source_type: str | None = None  # peer-reviewed study, review (secondary), textbook / clinical reference, ...
+    source_location: str | None = None  # page, table or section where the number appears
+    access_license: str | None = None  # e.g. "Open access, CC BY 4.0"; open access isn't the same as commercial use
+    last_checked: str | None = None  # YYYY-MM-DD a person last opened the source and confirmed the number
+    independent_sources: int = 0
+    contested_note: str | None = None
 
     @property
     def is_baseline(self):
         return self.condition == "baseline"
+
+    @property
+    def evidence(self):
+        """verified (5+ independent sources, none contesting), contested, or how far it is from verified."""
+        if self.contested_note:
+            return "contested"
+        if self.independent_sources >= VERIFIED_SOURCES:
+            return "verified"
+        return f"{self.independent_sources} of {VERIFIED_SOURCES} sources"
+
+    def is_stale(self, today=None):
+        """Not confirmed against its source within STALE_DAYS (or never)."""
+        if self.status == "placeholder":
+            return False
+        if not self.last_checked:
+            return True
+        return ((today or date.today()) - date.fromisoformat(self.last_checked)).days > STALE_DAYS
 
 
 @dataclass
@@ -122,6 +148,17 @@ def _number(v, where, col):
         raise LibraryError(f"{where}: {col} is '{v}'. Use a number, or leave the cell empty if it isn't sourced yet.")
 
 
+def _day(v, where):
+    if v is None:
+        return None
+    if isinstance(v, (datetime, date)):
+        return v.strftime("%Y-%m-%d")
+    try:
+        return date.fromisoformat(str(v)).isoformat()
+    except ValueError:
+        raise LibraryError(f"{where}: last_checked is '{v}'. Use a date written YYYY-MM-DD, or leave it empty.")
+
+
 def _need(row, cols, where):
     missing = [c for c in cols if c not in row]
     if missing:
@@ -149,6 +186,10 @@ def load_library(path) -> Library:
             laterality=row.get("laterality"), dependency_flags=row.get("dependency_flags"),
             notes=row.get("notes"), source=row.get("source"), status=row["status"],
             ISB_term=row.get("ISB_term"),
+            source_type=row.get("source_type"), source_location=row.get("source_location"),
+            access_license=row.get("access_license"), last_checked=_day(row.get("last_checked"), where),
+            independent_sources=int(_number(row.get("independent_sources"), where, "independent_sources") or 0),
+            contested_note=row.get("contested_note"),
         )
         _check_card(card, where)
         cards[cid] = card
@@ -253,6 +294,11 @@ def _check_card(c: Card, where):
                            "Mark it sourced or interpolated, or empty the numbers.")
     if c.status == "sourced" and (not c.source or c.source.upper().startswith("NEEDED")):
         raise LibraryError(f"{where}: '{c.card_id}' is marked sourced but has no citation.")
+    if c.status == "sourced" and not (c.source_type and c.access_license):
+        raise LibraryError(f"{where}: '{c.card_id}' is marked sourced but source_type or access_license is empty. "
+                           "Record what kind of source it is and how it may be used.")
+    if c.independent_sources < 0:
+        raise LibraryError(f"{where}: independent_sources can't be negative.")
     if c.status != "placeholder" and c.range_kind == "joint_limits" and c.ROM_max_deg is None:
         raise LibraryError(f"{where}: '{c.card_id}' is {c.status} but ROM_max_deg is empty.")
     for v, col in [(c.ROM_min_deg, "ROM_min_deg"), (c.ROM_max_deg, "ROM_max_deg")]:

@@ -46,7 +46,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 94 tests, ~2 min
+pytest                                                # 100 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -96,6 +96,16 @@ The avatar answers "can this person reach it?". For wheelchair profiles the veri
 - **Doors.** A wheelchair door that meets the ADA 32 in (0.815 m) but is under 0.852 m is CAUTION: about 1 in 20 measured users are wider than that with their chair (95th percentile 85.2 cm for women, 83.9 cm for men; power chairs up to 90.6 cm).
 - **Knee space.** The `pull_under` task (wheelchair profiles only) reads a sink or counter's `knee_clearance_m`, the height of the open space underneath. PASS at or above the tallest 95th-percentile seated knee height (74.8 cm); FAIL below the lowest median (61.4 cm); CAUTION between. The ADA's 27 in (685 mm) knee-clearance height lands in CAUTION.
 - **Caveats (the authors'):** 46% of the sample used power chairs (about 7% nationally), and it wasn't representative by sex, chair or disability.
+
+## How every number is tracked
+
+Rules added Nov 8, 2026 after a business coach's review, on top of the existing ones.
+
+- **Each card records its source in full.** The `source_type` column says what kind of source it is: study, review quoting a study, textbook or standard. `source_location` gives the page or table where the number appears. `access_license` says how the paper may be used (open access isn't the same as commercially usable). `last_checked` is when a person last opened it, and `independent_sources` counts the sources. `contested_note` records any source that disagrees.
+- **Verified means at least 5 independent sources agree** (Heather's rule). A review quoting a study counts as that study, not a new one. A source that disagrees still counts, and makes the card *contested*: the card shows each number instead of averaging them. Today no card is verified yet. `python -m accesspath check-cards` lists which cards are contested, which haven't been re-checked within a year, which have no page or table recorded, and which come from non-commercial or subscription papers.
+- **Every reach result lists the values it rests on** (`inputs` in the JSON output): each joint limit on the arm used, with its card, status and evidence, plus the body height, seat height and trunk lean, marked as estimates where they are.
+- **Changelog.** The card library's Changelog sheet records every change to a number or source: date, card, old and new value, the source that triggered it, and who checked it. Old values stay visible.
+- **Software and data licences** are logged in [docs/components.md](docs/components.md).
 
 ## Editing the card library
 

@@ -41,6 +41,7 @@ class Result:
     attempts: list[dict] = field(default_factory=list)  # every arm/approach tried, in order
     body: str = ""  # which body size was tested (default, a body band, or a measured height)
     population_pct: int | None = None  # share of measured wheelchair users who could reach it (IDeA Center)
+    inputs: list[dict] = field(default_factory=list)  # every value the result rests on, with its card and status
 
 
 def load_json(path):
@@ -119,6 +120,7 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps, pop=None) -> Res
             else f"fingertip stops {r.error_m * 100:.0f} cm short"
         base.reason = f"Out of reach at {h:.2f} m: best try ({_arm(arm)} arm, {a} approach) {miss}."
     base.arm, base.approach = arm, a
+    base.inputs = _inputs(profile, body, arm)
     base.error_m = None if r.error_m == float("inf") else r.error_m
     base.angles_deg = r.angles_deg
     base.target_local = r.target
@@ -137,6 +139,21 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps, pop=None) -> Res
                 base.reason += (f" The target ({h:.2f} m) is above seated shoulder height ({body.shoulder_height:.2f} m): "
                                 f"{cap.notes}")
     return base
+
+
+def _inputs(profile: ComposedProfile, body, arm):
+    """The values a reach result rests on: each joint limit on the arm used, and the body estimates."""
+    rows = [{"input": k, **v} for k, v in profile.provenance.items()
+            if k.split()[0] in _side_joints(["trunk", "shoulder", "elbow", "wrist"], arm)]
+    rows.append({"input": "body height", "value_m": round(body.height, 3), "status": "sourced" if profile.height_m
+                 else "interpolated", "source": profile.height_note or "default body (data/body.json)"})
+    rows.append({"input": "seat (hip) height", "value_m": round(body.hip_height, 3),
+                 "status": "interpolated" if profile.posture == "seated_wheelchair" else "sourced",
+                 "source": "data/body.json"})
+    if body.trunk_lean_max is not None:
+        rows.append({"input": "trunk lean allowed", "value_deg": body.trunk_lean_max, "status": "interpolated",
+                     "source": "data/body.json (estimate)"})
+    return rows
 
 
 def _population_check(base, pop, fx, h, obst):

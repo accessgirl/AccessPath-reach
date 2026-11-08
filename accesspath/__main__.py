@@ -58,6 +58,24 @@ def main(argv=None):
             print("\nStill needs a source:")
             for c in todo:
                 print(f"  {c.card_id}: {c.condition}, {c.joint_id} {c.DOF_axis}")
+        used = [c for c in lib.cards.values() if c.status != "placeholder"]
+        ev = Counter("verified" if c.evidence == "verified" else "contested" if c.evidence == "contested"
+                     else "not yet verified" for c in used)
+        print(f"\nEvidence (verified = 5+ independent sources agree): "
+              + ", ".join(f"{ev[k]} {k}" for k in ["verified", "contested", "not yet verified"]))
+        for title, rows in [
+            ("Contested (sources disagree; see contested_note):", [c for c in used if c.evidence == "contested"]),
+            ("Source not re-opened in the last year (or never):", [c for c in used if c.is_stale()]),
+            ("Where in the source the number appears isn't recorded:",
+             [c for c in used if not c.source_location or c.source_location.startswith(("not recorded", "none"))]),
+            ("Non-commercial or subscription licence (cite the number only):",
+             [c for c in used if c.access_license and ("NON-COMMERCIAL" in c.access_license.upper()
+                                                       or "SUBSCRIPTION" in c.access_license.upper())]),
+        ]:
+            if rows:
+                print(f"\n{title}")
+                for c in rows:
+                    print(f"  {c.card_id} ({c.evidence})")
         return 0
 
     if a.cmd == "check-avatar":

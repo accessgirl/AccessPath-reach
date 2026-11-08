@@ -37,6 +37,7 @@ class ComposedProfile:
     flags: list[Flag] = field(default_factory=list)
     height_m: float | None = None  # None: the default body in body.json
     height_note: str = ""
+    provenance: dict[str, dict] = field(default_factory=dict)  # "shoulder_R flexion" -> the card and value behind it
 
     def placeholder_flags(self, joints):
         """Placeholder flags that touch any of these joints (e.g. the joints in a task chain)."""
@@ -67,6 +68,7 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
     for card in library.cards.values():
         if card.is_baseline:
             _set(out.limits, card.joint_id, card.DOF_axis, card.ROM_max_deg)
+            _note(out, card.joint_id, card, card.ROM_max_deg)
 
     touched: dict[str, set[str]] = {}  # joint -> motion pairs that got condition data
     affected: set[str] = set()  # every joint a condition card names, applied or not
@@ -103,6 +105,7 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
             value = card.ROM_max_deg
         for j in joints:
             _set(out.limits, j, card.DOF_axis, value)
+            _note(out, j, card, value)
             touched.setdefault(j, set()).add(axis[0])
         out.applied.append(cid)
 
@@ -117,6 +120,13 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
             out.flags.append(Flag("", [j], "placeholder",
                                   f"{j}: {have}; {', '.join(rest)} still uses able-bodied values."))
     return out
+
+
+def _note(out, joint, card: Card, value):
+    if card.DOF_axis in AXES and value is not None:
+        out.provenance[f"{joint} {card.DOF_axis}"] = {
+            "value_deg": float(value), "card_id": card.card_id, "status": card.status,
+            "evidence": card.evidence, "source": card.source}
 
 
 def _set(limits, joint, axis_name, value):
