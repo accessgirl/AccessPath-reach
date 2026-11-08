@@ -29,6 +29,8 @@ class Body:
     approach: dict
     doorway: dict
     limb_clearance: float = 0.0  # the arm's centre line must stay this far from surfaces
+    knee_height: float | None = None  # measured, seated in the chair; None = use measured wheelchair users
+    knee_allowance: float = 0.05  # extra room above a measured knee for clothing and moving in (estimate)
 
     @property
     def arm_length(self):
@@ -39,21 +41,35 @@ class Body:
         return self.hip_height + self.trunk
 
 
-def load_body(path, posture, height_m=None) -> Body:
-    """`height_m` overrides the default height (a body band or a measured client); segments scale with it."""
+def load_body(path, posture, height_m=None, measured=None) -> Body:
+    """`height_m` overrides the default height (a body band or a measured client); segments scale with it.
+
+    `measured` (inches, see cards.MEASUREMENTS) replaces the height-ratio estimate for whatever was measured, so two
+    people of the same height with a long trunk or long legs each get their own shape:
+      seat_height_in      -> where the trunk pivots (seated: the seat; a simplification, the hip joint sits a little higher)
+      seated_shoulder_in  -> trunk length, seat to the top of the shoulder (acromion)
+      arm_length_in       -> upper arm + forearm + hand, split in the usual proportions
+      knee_height_in      -> used by the knee-space check, not the reach chain
+    """
     d = json.loads(Path(path).read_text())
     h, r = (height_m or d["height_m"]), d["segment_ratios"]
     p = d["postures"][posture]
+    m = {k: v * 0.0254 for k, v in (measured or {}).items()}
+    arm_ratio = r["upper_arm"] + r["forearm"] + r["hand"]
+    arm = m.get("arm_length_in", arm_ratio * h)
     return Body(
         height=h,
-        hip_height=p["hip_height_m"] if p["hip_height_m"] is not None else r["hip_height"] * h,
-        trunk=(r["shoulder_height"] - r["hip_height"]) * h,
+        hip_height=m.get("seat_height_in", p["hip_height_m"] if p["hip_height_m"] is not None else r["hip_height"] * h),
+        trunk=m.get("seated_shoulder_in", (r["shoulder_height"] - r["hip_height"]) * h),
         half_shoulder=r["shoulder_width"] * h / 2,
-        upper_arm=r["upper_arm"] * h, forearm=r["forearm"] * h, hand=r["hand"] * h,
+        upper_arm=arm * r["upper_arm"] / arm_ratio, forearm=arm * r["forearm"] / arm_ratio,
+        hand=arm * r["hand"] / arm_ratio,
+        knee_height=m.get("knee_height_in"),
         trunk_lean_max=p["trunk_lean_max_deg"],
         approach=d["approach"][posture],
         doorway=d["doorway_clear_width_m"],
         limb_clearance=d.get("limb_clearance_m", {}).get("value", 0.0),
+        knee_allowance=d.get("knee_allowance_m", {}).get("value", 0.05),
     )
 
 

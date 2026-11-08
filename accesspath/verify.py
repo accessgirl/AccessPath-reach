@@ -56,7 +56,7 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
     results = []
     for pid in profile_ids or list(library.profiles):
         profile = compose(library, pid)
-        body = load_body(body_path, profile.posture, profile.height_m)
+        body = load_body(body_path, profile.posture, profile.height_m, profile.measured)
         caps = [c for c in library.caps if c.applies_to_posture == profile.posture]
         for task in tasks:
             if task_ids and task["task_id"] not in task_ids:
@@ -70,7 +70,7 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
                 elif task["kind"] == "knee_clearance":
                     if profile.mobility_aid != "wheelchair":
                         continue  # knee space is about pulling in seated
-                    r = check_knee_space(profile, task, fx, size)
+                    r = check_knee_space(profile, task, fx, size, body)
                 else:
                     r = check_doorway(profile, body, task, fx)
                 r.room = room["room_id"]
@@ -145,11 +145,21 @@ def _inputs(profile: ComposedProfile, body, arm):
     """The values a reach result rests on: each joint limit on the arm used, and the body estimates."""
     rows = [{"input": k, **v} for k, v in profile.provenance.items()
             if k.split()[0] in _side_joints(["trunk", "shoulder", "elbow", "wrist"], arm)]
+    m = profile.measured
     rows.append({"input": "body height", "value_m": round(body.height, 3), "status": "sourced" if profile.height_m
                  else "interpolated", "source": profile.height_note or "default body (data/body.json)"})
     rows.append({"input": "seat (hip) height", "value_m": round(body.hip_height, 3),
-                 "status": "interpolated" if profile.posture == "seated_wheelchair" else "sourced",
-                 "source": "data/body.json"})
+                 "status": "measured" if "seat_height_in" in m
+                 else "interpolated" if profile.posture == "seated_wheelchair" else "sourced",
+                 "source": "profile measurement" if "seat_height_in" in m else "data/body.json"})
+    rows.append({"input": "trunk (seat to shoulder)", "value_m": round(body.trunk, 3),
+                 "status": "measured" if "seated_shoulder_in" in m else "sourced",
+                 "source": "profile measurement" if "seated_shoulder_in" in m
+                 else "height x Drillis & Contini ratio (data/body.json)"})
+    rows.append({"input": "arm length", "value_m": round(body.arm_length, 3),
+                 "status": "measured" if "arm_length_in" in m else "sourced",
+                 "source": "profile measurement" if "arm_length_in" in m
+                 else "height x Drillis & Contini ratios (data/body.json)"})
     if body.trunk_lean_max is not None:
         rows.append({"input": "trunk lean allowed", "value_deg": body.trunk_lean_max, "status": "interpolated",
                      "source": "data/body.json (estimate)"})
@@ -269,8 +279,28 @@ def check_doorway(profile: ComposedProfile, body, task, fx) -> Result:
     return r
 
 
-def check_knee_space(profile: ComposedProfile, task, fx, size) -> Result:
+def check_knee_space(profile: ComposedProfile, task, fx, size, body=None) -> Result:
     r = Result("", profile.profile_id, task["task_id"], fx["id"], "", "")
+    if body is not None and body.knee_height is not None and fx.get("knee_clearance_m") is not None:
+        under, knee, allow = fx["knee_clearance_m"], body.knee_height, body.knee_allowance
+        if under < knee:
+            r.status = "FAIL"
+            r.reason = (f"Knee space {under * 100:.1f} cm high is lower than this person's measured knee height "
+                        f"({knee * 100:.1f} cm).")
+        elif under < knee + allow:
+            r.status = "CAUTION"
+            r.reason = (f"Knee space {under * 100:.1f} cm high clears this person's measured knee height "
+                        f"({knee * 100:.1f} cm) by less than {allow * 100:.0f} cm, the allowance for clothing and "
+                        "moving in (an estimate).")
+        else:
+            r.status = "PASS"
+            r.reason = (f"Knee space {under * 100:.1f} cm high clears this person's measured knee height "
+                        f"({knee * 100:.1f} cm) with room to spare.")
+        r.inputs = [{"input": "knee height", "value_m": round(knee, 3), "status": "measured",
+                     "source": "profile measurement (knee_height_in)"},
+                    {"input": "knee allowance", "value_m": allow, "status": "interpolated",
+                     "source": "data/body.json (estimate)"}]
+        return r
     if size is None:
         r.status, r.reason = "UNVERIFIED", "No measured wheelchair-user sizes loaded (data/wheelchair_size.json)."
     elif fx.get("knee_clearance_m") is None:

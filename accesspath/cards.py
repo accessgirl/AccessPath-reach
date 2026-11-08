@@ -17,6 +17,19 @@ POSTURES = {"standing", "seated_wheelchair"}
 SIDES = {"R", "L", "both", "none"}
 
 
+# Tape-measure inputs a profile may carry, in inches: column -> (what it is, plausible low, plausible high, postures).
+# The range is a typo check, not a body standard: a number outside it is almost certainly a mistake.
+MEASUREMENTS = {
+    "seat_height_in": ("floor to the top of the seat cushion, in the person's own chair", 12, 30, {"seated_wheelchair"}),
+    "seated_shoulder_in": ("seat to the top of the shoulder (acromion), sitting upright: the trunk measure", 15, 32,
+                           {"seated_wheelchair", "standing"}),
+    "arm_length_in": ("top of the shoulder (acromion) to the fingertip, arm straight", 18, 36,
+                      {"seated_wheelchair", "standing"}),
+    "knee_height_in": ("floor to the top of the kneecap, seated in the chair with feet on the footrest", 14, 34,
+                       {"seated_wheelchair"}),
+}
+
+
 class LibraryError(ValueError):
     """The spreadsheet has a problem that would make results wrong. The message names the sheet and row."""
 
@@ -89,6 +102,7 @@ class Profile:
     settings: dict[str, float] = field(default_factory=dict)  # card_id -> value dialled in within its band
     body_band: str | None = None
     body_height_in: float | None = None  # dialled in within the body band
+    measured: dict[str, float] = field(default_factory=dict)  # tape-measure inputs, inches (see MEASUREMENTS)
 
 
 @dataclass
@@ -240,6 +254,16 @@ def load_library(path) -> Library:
                     row["mobility_aid"], str(row["affected_side"]), ids, settings,
                     str(row["body_band"]) if row.get("body_band") else None,
                     _number(row.get("body_height_in"), where, "body_height_in"))
+        for col, (what, lo, hi, postures) in MEASUREMENTS.items():
+            v = _number(row.get(col), where, col)
+            if v is None:
+                continue
+            if not lo <= v <= hi:
+                raise LibraryError(f"{where}: {col} is {v:g} in ({what}). That's outside {lo}-{hi} in, so it's "
+                                   "probably a typo or a measurement in centimetres. Re-measure and enter inches.")
+            if row["posture"] not in postures:
+                raise LibraryError(f"{where}: {col} only applies to a seated profile ({what}).")
+            p.measured[col] = v
         if p.profile_id in profiles:
             raise LibraryError(f"{where}: profile_id '{p.profile_id}' is used twice.")
         if p.profile_id.upper().startswith("SCI"):

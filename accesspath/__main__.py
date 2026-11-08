@@ -97,7 +97,7 @@ def main(argv=None):
 
     if a.cmd == "envelope":
         p = compose(lib, a.profile)
-        pts = envelope(arm_chain(load_body(a.body, p.posture, p.height_m), p, a.arm), n=a.n)
+        pts = envelope(arm_chain(load_body(a.body, p.posture, p.height_m, p.measured), p, a.arm), n=a.n)
         Path(a.out).write_text(_ply(pts))
         print(f"Wrote {len(pts)} points to {a.out} (avatar frame: metres, x right, y forward, z up, "
               "origin on the floor under the hip).")

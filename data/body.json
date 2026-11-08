@@ -37,6 +37,8 @@
     "seated_wheelchair": {"forward": 0.60, "side": 0.33},
     "_note": "Standing forward: toes at the wall. Wheelchair forward: footrests at the wall. Wheelchair side: side of the chair ~0.1 m from the wall, which is inside the ADA 308.3 side-reach 10 in (255 mm) limit."
   },
+  "knee_allowance_m": {"value": 0.05, "status": "interpolated",
+    "_note": "Extra room above a person's MEASURED knee height (top of kneecap, seated) before knee space under a sink or counter passes: clothing, shoes on the footrest, moving in and out. Estimate, not sourced; an OT should check it. Below this margin the result is CAUTION, not PASS."},
   "limb_clearance_m": {
     "value": 0.035,
     "_about": "How far the centre line of the arm (shoulder to wrist) must stay from a wall or counter. The arm has thickness; only the hand may touch the surface.",

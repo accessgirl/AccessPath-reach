@@ -46,7 +46,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 101 tests, ~2 min
+pytest                                                # 107 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -116,6 +116,13 @@ Open `data/card_library.xlsx`. The **Field Definitions** sheet explains every co
 - **To make a new profile:** add a row to the **Profiles** sheet listing the condition card_ids it uses.
 - **To dial a card within its range:** write `card_id@value` in the profile's card_ids, e.g. `stroke-shoulder-abd-1@60` (that card's band is 45 to 90 degrees). With no `@value`, the cautious edge is used. A value outside the range is rejected.
 - **To set a body size:** give the profile a `body_band` (A to D on the **Body Bands** sheet: 4-inch height ranges covering the 5th to 95th percentile of U.S. adults, from CDC data). Reach is then tested at the band's shortest height. A `body_height_in` dials in a measured height within the band; a measured height always beats a band.
+- **To use a person's own measurements:** fill any of these Profiles columns, in inches. Each one replaces the height-ratio estimate, so two people of the same height with a long trunk or long legs each get their own shape:
+  - `seat_height_in`: floor to the top of the seat cushion, in their own chair
+  - `seated_shoulder_in`: seat to the top of the shoulder, sitting upright (the trunk measure; the shoulder, not the head, so head size doesn't hide trunk length)
+  - `arm_length_in`: top of the shoulder to the fingertip
+  - `knee_height_in`: floor to the top of the kneecap, seated, feet on the footrest. The knee-space check then uses this person's knee instead of population numbers, with a 2 in allowance (an estimate) before it passes.
+
+  A number outside a plausible range (e.g. one entered in centimetres) is rejected. Every result lists which values were measured. The demo profiles `wheelchair_long_trunk` and `wheelchair_short_trunk` are the same height with the same arms; the long trunk reaches 184 cm up a side wall, the short one 176 cm.
 - **Leave unsourced numbers empty,** not a dash.
 - **`range_kind` tells the verifier how to read the numbers:**
   - Bands (`score_band`: a stroke scoring band, or a study's mean ± 1 SD) use the band's lower edge, so the design has to work for everyone in the band.

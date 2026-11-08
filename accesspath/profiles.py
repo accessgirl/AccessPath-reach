@@ -37,6 +37,7 @@ class ComposedProfile:
     flags: list[Flag] = field(default_factory=list)
     height_m: float | None = None  # None: the default body in body.json
     height_note: str = ""
+    measured: dict[str, float] = field(default_factory=dict)  # tape-measure inputs, inches
     provenance: dict[str, dict] = field(default_factory=dict)  # "shoulder_R flexion" -> the card and value behind it
 
     def placeholder_flags(self, joints):
@@ -64,6 +65,11 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
         out.height_m, out.height_note = round(h * 0.0254, 4), why
     elif p.body_height_in is not None:
         out.height_m, out.height_note = round(p.body_height_in * 0.0254, 4), f"measured height {p.body_height_in:g} in"
+
+    out.measured = dict(p.measured)
+    if p.measured:
+        shown = ", ".join(f"{k.removesuffix('_in').replace('_', ' ')} {v:g} in" for k, v in p.measured.items())
+        out.height_note = "; ".join(x for x in [out.height_note, f"measured: {shown}"] if x)
 
     for card in library.cards.values():
         if card.is_baseline:
