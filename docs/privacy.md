@@ -17,6 +17,8 @@ The random client code links the engine to the vault, and nothing else. The acco
 
 AccessPath never accepts reach envelopes or medical documents from customers, including for troubleshooting; support gets only the app version and error codes.
 
+Each transfer of an envelope to a contractor needs the family's specific consent for that transfer, and the family sends it, not AccessPath's system. Keeping data on the family's computer doesn't end AccessPath's responsibility for how its tool moves that data (business coach review, Nov 8, 2026).
+
 ## Rules
 
 1. **The engine takes no identifying fields.** `accesspath/privacy.py` rejects names, birthdates, ages, addresses, phone numbers, emails, record or insurance numbers, and diagnoses wherever they would enter: the Profiles sheet's columns and every key of a room file. A test covers each.
@@ -40,5 +42,17 @@ So the protection comes from patient information **never reaching AccessPath's s
 - Can a home's floor plan identify a person, and so need the same protection?
 - Does running only on the customer's machine keep AccessPath out of business-associate status, including for support and updates?
 - Does an account holding a name next to "requires accessibility modifications" count as health data under state laws that cover inferences (e.g. Washington's My Health My Data Act)?
+
+Added Nov 8, 2026 (business coach review):
+
+- Is a contractor marketplace like this a HIPAA covered entity or business associate at all? What do DC, Virginia and Maryland privacy laws require of it?
+
+### Business and licensing questions for the lawyer
+
+- What do DC, Virginia and Maryland rules say about contractor referral fees and lead generation, and what disclosure do they require on the results page?
+- On jobs paid with Medicaid waiver money, could a finder's fee cross anti-kickback rules?
+- Several card numbers come from papers that are subscription-only or under a non-commercial licence (CC BY-NC-ND). Citing a number (a fact) is not copying text or figures, but is it fine in a paid product? (`python -m accesspath check-cards` lists the cards.)
+- Blender is GPL-3.0 and MakeHuman's program is AGPL-3.0 (see docs/components.md). What can be shipped or hosted without publishing AccessPath's own code?
+- For family money: the lawyer drafts for both sides. Confirm in writing that he's drafting, not advising either.
 
 This is general information, not legal advice.
