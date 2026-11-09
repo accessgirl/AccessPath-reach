@@ -31,9 +31,9 @@ The method behind AccessPath (the cards, the evidence rules, how the reach envel
 | Medical sense of the cards | J. (RN) | To be named | Package being prepared |
 | Business model | Business coach | To be named | Advice recorded Nov 8, 2026 |
 | Legal and privacy | | Lawyer (to be hired and paid) | Questions in `docs/privacy.md` |
+| Building and renovation | Contractor | To be named | |
 
 Paid checks cost money, so they are batched: advice collects as "unverified" and goes to the checker in one package per area, when there's budget. That keeps the cost down without skipping the check.
-| Building and renovation | Contractor | To be named | |
 
 ## Where things are recorded
 
