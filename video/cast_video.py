@@ -8,6 +8,7 @@
   python3 video/test_clips.py -- --blend out/blends/<person>.blend --results out/results_<room>.json \
       --profile <person> --room data/rooms/test_<room>.json --out out/clips/<person>/<room> --fixture <id> --final
   python3 video/cast_video.py --voice-model kokoro-v1.0.onnx --voices voices-v1.0.bin --out out/AccessPath_six_people.mp4
+  (add --part 1 or --part 2 to make the two halves as separate files)
 
 Every number shown or spoken comes from the card library, the room files and the verifier's results.
 """
@@ -741,10 +742,30 @@ class Story:
         return Scene(["Six people, three rooms, one method. Every result traces back to a card, and every card back "
                       "to the research it came from. That's what makes it checkable."], draw)
 
-    def scenes(self):
-        out = [self.title(), self.problem(), self.parts(), self.library(), self.measurements(), self.rooms_scene(),
-               self.answers(), self.cast_scene(),
-               self.p1_intro(), self.p1_kitchen_outlet(), self.p1_upper(), self.knee_scene(), self.p1_pantry_door(),
+    def part2_title(self):
+        def draw(img, t, on):
+            rrect(img, (80, 220, 92, 460), ACCENT, on(0), radius=4)
+            text(img, (120, 210), "Part 2", 92, INK, bold=True, alpha=on(0))
+            text(img, (124, 330), "Six people, three rooms", 40, MUTED, alpha=on(0))
+            text(img, (124, 410), "Every number shown comes from the tool's own output.", 28, ACCENT, alpha=on(0))
+        return Scene(["Part two. Six people, tested in three rooms. Every number on the screen comes from the tool's "
+                      "own output."], draw)
+
+    def part1_end(self):
+        def draw(img, t, on):
+            text(img, (80, 280), "Next: Part 2", 56, INK, bold=True, alpha=on(0))
+            text(img, (80, 360), "Six people, three rooms, every result.", 36, ACCENT, alpha=on(0))
+        return Scene(["Part two puts these six people in the three rooms, and shows every result."], draw)
+
+    def scenes(self, part=None):
+        one = [self.title(), self.problem(), self.parts(), self.library(), self.measurements(), self.rooms_scene(),
+               self.answers(), self.cast_scene()]
+        if part == 1:
+            return one + [self.part1_end()]
+        out = [] if part == 2 else one
+        if part == 2:
+            out.append(self.part2_title())
+        out += [self.p1_intro(), self.p1_kitchen_outlet(), self.p1_upper(), self.knee_scene(), self.p1_pantry_door(),
                self.p1_closet(), self.p1_switch(), self.p1_report(), self.rests_on(),
                self.p2_compare(), self.p3_stroke(), self.report("stroke_R_moderate_wheelchair", [
                    "Person three's report. The left hand does the reaching. And because this person's knee wasn't "
@@ -765,10 +786,11 @@ def main():
     ap.add_argument("--speed", type=float, default=0.9, help="speaking speed; 1.0 is normal")
     ap.add_argument("--out", required=True)
     ap.add_argument("--preview", help="write one still per scene into this folder instead of a video")
+    ap.add_argument("--part", type=int, choices=[1, 2], help="only part 1 (how it's built) or part 2 (the six people)")
     a = ap.parse_args()
 
     story = Story(a)
-    scenes = story.scenes()
+    scenes = story.scenes(a.part)
     voice = Voice(a.voice_model, a.voices, a.voice, a.speed, ROOT / "out" / "voice_cache")
     tracks = []
     for s in scenes:
