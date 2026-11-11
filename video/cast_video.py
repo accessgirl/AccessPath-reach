@@ -35,17 +35,17 @@ ROOMS = [("bathroom", "Bathroom"), ("kitchen", "Kitchen"), ("bedroom", "Bedroom"
 CAST = [  # profile, short name, one-line description
     ("wheelchair_long_trunk", "Person 1", "Manual wheelchair, tape-measured body"),
     ("wheelchair_short_trunk", "Person 2", "Same as Person 1, shorter trunk"),
-    ("stroke_R_moderate_wheelchair", "Person 3", "Stroke (right side, moderate), manual wheelchair"),
+    ("stroke_R_moderate_wheelchair", "Person 3", "Stroke (right side, moderate), wheelchair"),
     ("arthritis_both", "Person 4", "Arthritis, both sides, standing"),
     ("crutches_wet_floor", "Person 5", "Crutches, on a wet floor"),
     ("kafo_L", "Person 6", "Locked leg brace (KAFO), left leg"),
 ]
 NAMES = {
-    "outlet_low": "Low outlet", "outlet_counter": "Outlet over the vanity", "switch_door": "Light switch",
+    "outlet_low": "Low outlet", "outlet_counter": "Outlet over vanity", "switch_door": "Light switch",
     "shelf_high": "Linen shelf", "door_main": "Bathroom door", "door_closet": "Closet door",
     "sink_vanity": "Knee space: vanity",
-    "outlet_backsplash": "Outlet over the counter", "upper_cabinet": "Wall cabinet shelf",
-    "sink_kitchen": "Knee space: sink", "prep_counter": "Knee space: work counter", "pantry_shelf": "Pantry shelf",
+    "outlet_backsplash": "Outlet over counter", "upper_cabinet": "Wall cabinet shelf",
+    "sink_kitchen": "Knee space: sink", "prep_counter": "Knee space: counter", "pantry_shelf": "Pantry shelf",
     "switch_kitchen": "Light switch", "door_kitchen": "Kitchen door", "door_pantry": "Pantry door",
     "outlet_bedside": "Outlet by the bed", "outlet_desk": "Outlet by the desk", "closet_rod": "Closet rod",
     "thermostat": "Thermostat", "switch_bedroom": "Light switch", "door_bedroom": "Bedroom door",
@@ -256,8 +256,8 @@ class Story:
             a = on(1)
             if a > 0.5:
                 d = ImageDraw.Draw(img)
-                s = 9.0  # px per inch
-                fx, fy = 300, 640  # floor point under the seat front
+                s = 7.0  # px per inch
+                fx, fy = 300, 540  # floor point under the seat front
                 seat = fy - m["seat_height_in"] * s
                 sh = seat - m["seated_shoulder_in"] * s
                 d.line([fx - 140, fy, fx + 260, fy], fill=MUTED, width=3)  # floor
@@ -285,9 +285,9 @@ class Story:
                      (4, f"Arm length: {m['arm_length_in']:g} in"),
                      (5, f"Knee height: {m['knee_height_in']:g} in")]
             for k, (li, s_) in enumerate(items):
-                text(img, (700, 200 + k * 60), s_, 32, INK, bold=True, alpha=on(li))
-            para(img, (700, 460), "Each one replaces an estimate. Every result says which values were measured.",
-                 26, ACCENT, alpha=on(6), width=34)
+                text(img, (600, 190 + k * 56), s_, 30, INK, bold=True, alpha=on(li))
+            para(img, (600, 430), "Each one replaces an estimate. Every result says which values were measured.",
+                 26, ACCENT, alpha=on(6), width=40)
         return Scene([
             "Part two, the person. A person is built by combining cards: normal ranges for every joint, plus the "
             "cards for their condition.",
@@ -424,7 +424,7 @@ class Story:
             kicker(img, "Person 1 · Kitchen · knee space", on(0))
             text(img, (80, 95), "Can the chair pull in underneath?", 44, INK, bold=True, alpha=on(0))
             d = ImageDraw.Draw(img)
-            base, s = 600, 11.0  # px per inch
+            base, s = 470, 9.0  # px per inch
             bars = [(0, "This person's knee", knee, ACCENT, "measured"),
                     (1, "Under the work counter", h_prep, STATUS[prep["status"]], prep["status"]),
                     (2, "Under the sink", h_sink, STATUS[sink["status"]], sink["status"])]
@@ -520,10 +520,10 @@ class Story:
                 x = 60 + c * 395
                 text(img, (x, 100), name, 30, ACCENT, bold=True, alpha=on(0))
                 for i, r in enumerate(self.results_for(pid, key)):
-                    y = 150 + i * 62
-                    rrect(img, (x, y, x + 375, y + 54), WHITE, on(0), radius=10, outline=LIGHT)
-                    chip(img, (x + 10, y + 11), r["status"], on(0), 16)
-                    text(img, (x + 170, y + 14), NAMES[r["fixture"]][:22], 21, INK, alpha=on(0))
+                    y = 145 + i * 54
+                    rrect(img, (x, y, x + 375, y + 48), WHITE, on(0), radius=10, outline=LIGHT)
+                    chip(img, (x + 8, y + 9), r["status"], on(0), 15)
+                    text(img, (x + 150, y + 12), NAMES[r["fixture"]], 19, INK, alpha=on(0))
         return Scene([L(x) for x in lines], draw)
 
     def p1_report(self):
@@ -555,8 +555,8 @@ class Story:
             kicker(img, "Person 1 · Kitchen · outlet over the counter", on(0))
             text(img, (80, 90), "What this one result rests on", 40, INK, bold=True, alpha=on(0))
             for k, i in enumerate(rows):
-                y = 160 + k * 42
-                if y > 620:
+                y = 140 + k * 36
+                if y > 560:
                     break
                 tg, col = tag(i)
                 a = on(1) if i["status"] == "measured" else on(2) if i["status"] == "sourced" else on(3)
@@ -587,14 +587,14 @@ class Story:
             kicker(img, "Person 1 vs Person 2 · same height, different trunk", on(0))
             for k, (fr, r, m, name) in enumerate([(fa, ra, ma, "Person 1"), (fb, rb, mb, "Person 2")]):
                 x = 20 + k * 630
-                self.play(img, fr, t, (x, 110, x + 610, 110 + 343))
-                rrect(img, (x, 470, x + 610, 600), WHITE, on(0), radius=12, outline=LIGHT)
-                text(img, (x + 20, 485), f"{name}: seat to shoulder {m['seated_shoulder_in']:g} in", 26, INK,
+                self.play(img, fr, t, (x, 95, x + 610, 95 + 343))
+                rrect(img, (x, 450, x + 610, 570), WHITE, on(0), radius=12, outline=LIGHT)
+                text(img, (x + 20, 462), f"{name}: seat to shoulder {m['seated_shoulder_in']:g} in", 26, INK,
                      bold=True, alpha=on(0))
                 if on(2) > 0:
-                    chip(img, (x + 20, 535), r["status"], on(2), 22)
+                    chip(img, (x + 20, 510), r["status"], on(2), 22)
                     extra = (f"{r['error_m'] * 100:.0f} cm short" if r["status"] == "FAIL" else "reached")
-                    text(img, (x + 250, 545), extra, 24, INK, alpha=on(2))
+                    text(img, (x + 250, 518), extra, 24, INK, alpha=on(2))
         n_d = len(diffs)
         return Scene([
             L(f"Person two is identical to person one: same height, same arms, same chair. Only the trunk is "
@@ -656,7 +656,7 @@ class Story:
         def draw(img, t, on):
             kicker(img, "Person 5 · reaching", on(0))
             text(img, (80, 200), "Every reach:", 50, INK, bold=True, alpha=on(0))
-            chip(img, (420, 195), "UNVERIFIED", on(0), 34)
+            chip(img, (470, 195), "UNVERIFIED", on(0), 34)
             para(img, (80, 320), "No research yet on how far someone on crutches can safely reach on a wet floor.",
                  34, INK, alpha=on(0), width=50)
         s3 = Scene(["Reaching comes back unverified for person five: there's no research yet on how far someone on "
@@ -667,9 +667,9 @@ class Story:
         def draw(img, t, on):
             kicker(img, "Person 6 · locked leg brace", on(0))
             text(img, (80, 150), "Reaching:", 44, INK, bold=True, alpha=on(1))
-            chip(img, (340, 145), "PASS", on(1), 30)
+            chip(img, (370, 145), "PASS", on(1), 30)
             text(img, (80, 260), "Doorways:", 44, INK, bold=True, alpha=on(2))
-            chip(img, (340, 255), "UNVERIFIED", on(2), 30)
+            chip(img, (370, 255), "UNVERIFIED", on(2), 30)
             para(img, (80, 360), "A locked knee swings outward with each step. That swing width isn't in the "
                  "research library yet.", 32, INK, alpha=on(2), width=55)
         return Scene([L("Person six wears a locked brace on the left leg, a KAFO."),
@@ -686,15 +686,15 @@ class Story:
         def draw(img, t, on):
             kicker(img, "The whole picture", on(0))
             for c, (key, name) in enumerate(ROOMS):
-                text(img, (420 + c * 285, 100), name, 28, ACCENT, bold=True, alpha=on(0))
+                text(img, (440 + c * 280, 95), name, 28, ACCENT, bold=True, alpha=on(0))
             for i, (pid, short, desc) in enumerate(CAST):
-                y = 150 + i * 80
+                y = 140 + i * 68
                 a = on(0)
                 text(img, (60, y + 6), short, 26, INK, bold=True, alpha=a)
-                text(img, (60, y + 40), desc[:34], 18, MUTED, alpha=a)
+                text(img, (60, y + 38), desc, 15, MUTED, alpha=a)
                 for c, (key, _) in enumerate(ROOMS):
                     cnt = Counter(r["status"] for r in self.results_for(pid, key))
-                    x = 420 + c * 285
+                    x = 440 + c * 280
                     for st in order:
                         if cnt[st]:
                             w = 24 * cnt[st]
@@ -704,7 +704,7 @@ class Story:
                                      anchor="mm")
                             x += w + 4
             for k, st in enumerate(order):
-                chip(img, (420 + k * 200, 640), st, on(1), 16)
+                chip(img, (560 + k * 175, 40), st, on(1), 15)
         return Scene([f"Here is the whole picture: six people, three rooms, {total} checks.",
                       "The same room gives different answers for different people. A building code would have given "
                       "every one of them the same answer. That difference is what AccessPath is for."], draw)
@@ -721,9 +721,9 @@ class Story:
             kicker(img, "What it doesn't claim yet", on(0))
             for i, s in enumerate(items):
                 a = on(i + 1)
-                y = 120 + i * 88
-                text(img, (90, y), "•", 40, ACCENT, bold=True, alpha=a)
-                para(img, (135, y + 4), s, 28, INK, alpha=a, width=62)
+                y = 110 + i * 72
+                text(img, (90, y), "•", 36, ACCENT, bold=True, alpha=a)
+                para(img, (135, y + 4), s, 26, INK, alpha=a, width=75)
         return Scene(["It's just as important to be clear about what the tool doesn't do yet.",
                       "The six people are made-up examples, not real people.",
                       "The rooms are test rooms. Reading real architectural floor plans comes next.",
@@ -747,8 +747,9 @@ class Story:
                self.p1_intro(), self.p1_kitchen_outlet(), self.p1_upper(), self.knee_scene(), self.p1_pantry_door(),
                self.p1_closet(), self.p1_switch(), self.p1_report(), self.rests_on(),
                self.p2_compare(), self.p3_stroke(), self.report("stroke_R_moderate_wheelchair", [
-                   "Person three's report. The left hand does the work, so the results match person one's, wherever "
-                   "the right arm isn't needed."]),
+                   "Person three's report. The left hand does the reaching. And because this person's knee wasn't "
+                   "measured, the knee-space checks compare against measured wheelchair users instead, so the work "
+                   "counter here is a caution, not a pass."]),
                self.p4_arthritis()]
         out += self.p5_crutches()
         out += [self.p6_kafo(), self.whole(), self.limits(), self.close()]
