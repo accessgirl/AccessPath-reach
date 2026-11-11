@@ -85,7 +85,7 @@ def clip(a, room, result, attempt, index):
         av.pose.bones[n].rotation_euler = (0, 0, 0)
     parented_stick_figure(av, coll, sr.material("avatar", (0.2, 0.35, 0.75, 1)))
     if av.location.z < -0.01:
-        sr.wheelchair(av, coll, rig.body_dims(os.path.join(ROOT, "data", "body.json"), "seated_wheelchair"))
+        sr.wheelchair(av, coll, rig.dims_of(base, os.path.join(ROOT, "data", "body.json"), "seated_wheelchair"))
     # Follow the verifier's checked path (rest -> ... -> reach), so the arm never passes through a surface.
     # A miss has no path: the arm moves straight to its closest try.
     path = attempt.get("path_deg") or []
@@ -141,13 +141,17 @@ def main(argv):
     ap.add_argument("--frames", type=int, default=30, help="frames for the arm to move from rest to the reach")
     ap.add_argument("--samples", type=int, default=12)
     ap.add_argument("--fixture", action="append", help="only this fixture (repeatable)")
+    ap.add_argument("--final", action="store_true", help="only the attempt the result reports (its arm and approach)")
     a = ap.parse_args(argv)
     os.makedirs(a.out, exist_ok=True)
     room = json.load(open(a.room))
     for r in json.load(open(a.results)):
         if r["profile"] != a.profile or not r.get("attempts") or (a.fixture and r["fixture"] not in a.fixture):
             continue
+        decisive = max(i for i, t in enumerate(r["attempts"]) if (t["arm"], t["approach"]) == (r["arm"], r["approach"]))
         for i, att in enumerate(r["attempts"]):
+            if a.final and i != decisive:
+                continue
             if att["angles_deg"] and att["target_local"]:
                 clip(a, room, r, att, i)
                 print(f"rendered {r['fixture']} attempt {i}")

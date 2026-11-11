@@ -1,6 +1,6 @@
 """Give every missed reach attempt in a results file the closest pose the arm can get to, so a clip can show it.
 
-  python3 video/fill_poses.py out/results.json
+  python3 video/fill_poses.py out/results.json [data/rooms/test_kitchen.json]
 
 The verifier skips posing an arm when a target is plainly out of reach. This only adds a picture: status,
 reason and error_m are left exactly as the verifier wrote them.
@@ -19,10 +19,10 @@ from accesspath.profiles import compose  # noqa: E402
 from accesspath.verify import _allowed, load_json  # noqa: E402
 
 
-def main(path):
+def main(path, room_path=ROOT / "data" / "rooms" / "test_bathroom.json"):
     results = json.loads(Path(path).read_text())
     lib = load_library(ROOT / "data" / "card_library.xlsx")
-    room = {f["id"]: f for f in load_json(ROOT / "data" / "rooms" / "test_bathroom.json")["fixtures"]}
+    room = {f["id"]: f for f in load_json(room_path)["fixtures"]}
     for r in results:
         missing = [a for a in r.get("attempts", []) if not a["angles_deg"]]
         if not missing:
@@ -43,4 +43,4 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(*sys.argv[1:3])

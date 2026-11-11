@@ -96,7 +96,7 @@ def main(argv):
             av.pose.bones[n].rotation_euler = (0, 0, 0)
         parented_stick_figure(av, coll, mat)
         if av.location.z < -0.01:
-            sr.wheelchair(av, coll, rig.body_dims(os.path.join(ROOT, "data", "body.json"), "seated_wheelchair"))
+            sr.wheelchair(av, coll, rig.dims_of(base, os.path.join(ROOT, "data", "body.json"), "seated_wheelchair"))
         for n in REACH_BONES:
             pb = av.pose.bones[n]
             pb.keyframe_insert("rotation_euler", frame=8)

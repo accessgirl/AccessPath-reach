@@ -56,3 +56,26 @@ def test_limit_constraint_locks_affected_abduction(built):
     rest = tip(built, "R")
     built.pose.bones["shoulder_R"].rotation_euler.z = math.radians(-90)
     assert np.allclose(tip(built, "R"), rest)
+
+
+def test_measured_body_rig_matches_reach_chain(library):
+    """A tape-measured person (long trunk, seated) gets the same bones in Blender as in the reach chain."""
+    composed = json.loads(json.dumps(compose(library, "wheelchair_long_trunk").to_dict()))
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    obj = rig.build_armature(rig.dims_for(composed, DATA / "body.json", "standing"))
+    obj["accesspath_body"] = json.dumps({"height_m": composed["height_m"], "measured": composed["measured"]})
+    rig.pose_seated(obj, rig.dims_of(obj, DATA / "body.json", "seated_wheelchair"))
+    body = load_body(DATA / "body.json", "seated_wheelchair", composed["height_m"], composed["measured"])
+    chain = arm_chain(body, compose(library, "wheelchair_long_trunk"), "R")
+    rng = np.random.default_rng(2)
+    for _ in range(10):
+        lean, fl, ab, el, wr = rng.uniform([0, -50, 0, 0, -60], [30, 170, 170, 140, 70])
+        for pb in obj.pose.bones:
+            if not pb.name.startswith(("hip_", "knee_")):  # keep the seated legs
+                pb.rotation_euler = (0, 0, 0)
+        obj.pose.bones["trunk"].rotation_euler.x = math.radians(lean)
+        obj.pose.bones["shoulder_R"].rotation_euler = (math.radians(fl), 0, math.radians(-ab))
+        obj.pose.bones["elbow_R"].rotation_euler.x = math.radians(el)
+        obj.pose.bones["wrist_R"].rotation_euler.x = math.radians(wr)
+        want = chain.forward_kinematics([0, 0] + list(np.radians([lean, fl, ab, el, wr])) + [0])[:3, 3]
+        assert np.allclose(tip(obj, "R"), want, atol=1e-4)
