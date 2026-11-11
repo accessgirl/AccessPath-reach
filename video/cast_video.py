@@ -36,7 +36,7 @@ ROOMS = [("bathroom", "Bathroom"), ("kitchen", "Kitchen"), ("bedroom", "Bedroom"
 CAST = [  # profile, short name, one-line description
     ("wheelchair_long_trunk", "Person 1", "Manual wheelchair, tape-measured body"),
     ("wheelchair_short_trunk", "Person 2", "Same as Person 1, shorter trunk"),
-    ("stroke_R_moderate_wheelchair", "Person 3", "Stroke (right side, moderate), wheelchair"),
+    ("stroke_R_moderate_wheelchair", "Person 3", "Stroke (right side), wheelchair"),
     ("arthritis_both", "Person 4", "Arthritis, both sides, standing"),
     ("crutches_wet_floor", "Person 5", "Crutches, on a wet floor"),
     ("kafo_L", "Person 6", "Locked leg brace (KAFO), left leg"),
@@ -430,7 +430,7 @@ class Story:
                     (1, "Under the work counter", h_prep, STATUS[prep["status"]], prep["status"]),
                     (2, "Under the sink", h_sink, STATUS[sink["status"]], sink["status"])]
             for i, label, h, col, tag in bars:
-                a = on(i + (1 if i else 0))
+                a = on(i)
                 if a < 0.5:
                     continue
                 x = 160 + i * 340
@@ -521,10 +521,10 @@ class Story:
                 x = 60 + c * 395
                 text(img, (x, 100), name, 30, ACCENT, bold=True, alpha=on(0))
                 for i, r in enumerate(self.results_for(pid, key)):
-                    y = 145 + i * 54
-                    rrect(img, (x, y, x + 375, y + 48), WHITE, on(0), radius=10, outline=LIGHT)
-                    chip(img, (x + 8, y + 9), r["status"], on(0), 15)
-                    text(img, (x + 150, y + 12), NAMES[r["fixture"]], 19, INK, alpha=on(0))
+                    y = 145 + i * 50
+                    rrect(img, (x, y, x + 375, y + 44), WHITE, on(0), radius=10, outline=LIGHT)
+                    chip(img, (x + 8, y + 7), r["status"], on(0), 15)
+                    text(img, (x + 150, y + 10), NAMES[r["fixture"]], 19, INK, alpha=on(0))
         return Scene([L(x) for x in lines], draw)
 
     def p1_report(self):
