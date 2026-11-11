@@ -19,7 +19,7 @@ Each avatar is built from **joint cards** (baseline range of motion plus conditi
 | 3. Profile composer | Done. A profile name produces a constrained copy of the rig | `accesspath/profiles.py`, `blender/apply_profile.py` |
 | 4. Envelope generation | Done for the arm chain (trunk lean, shoulder, elbow, wrist) using IKPy. Point cloud exports as `.ply` | `accesspath/kinematics.py` |
 | 5. Task chain | Done. 5 tasks: outlet, light switch, shelf, doorway, knee space under a sink or counter | `data/tasks.json` |
-| 6. Floor-plan test | Done for a JSON room, viewable in Blender. **AutoCAD/DXF import is not built yet.** | `accesspath/verify.py`, `blender/show_results.py` |
+| 6. Floor-plan test | Done for JSON rooms (test bathroom, kitchen, bedroom), viewable in Blender. **AutoCAD/DXF import is not built yet.** | `accesspath/verify.py`, `blender/show_results.py` |
 
 The Blender skeleton and the IKPy reach chain are tested against each other: for the same joint angles they put the fingertip in the same place, to 0.1 mm.
 
@@ -46,7 +46,7 @@ python -m accesspath verify                           # every profile x task in 
 python -m accesspath verify --profile kafo_L -o out/results.json
 python -m accesspath compose stroke_R_moderate        # the joint limits a profile ends up with
 python -m accesspath envelope stroke_R_severe --arm R -o out/envelope.ply
-pytest                                                # 107 tests, ~2 min
+pytest                                                # 108 tests, ~2 min
 ```
 
 ### In Blender (tested with Blender 5.0)
@@ -164,6 +164,10 @@ python3 video/make_video.py --clip out/frames/clip_ --out out/AccessPath_demo.mp
 ```
 
 Needs `pip install bpy matplotlib pillow imageio-ffmpeg`, and `out/avatar.blend` with the profile's rig (see "In Blender" above).
+
+### Six people, three rooms (~13 min, two parts)
+
+How the tool is built, then six made-up people (two tape-measured wheelchair users who differ only in trunk length, stroke, arthritis, crutches, a locked leg brace) tested in three made-up rooms: the test bathroom, `data/rooms/test_kitchen.json` and `data/rooms/test_bedroom.json`. Every number on screen comes from the verifier's results. The build steps are at the top of `video/cast_video.py`; `--part 1` and `--part 2` make the two halves.
 
 ### Narrated walkthrough (~11 min)
 
