@@ -1,7 +1,7 @@
 """Animated clip for the demo video: avatars reach out to each fixture while the camera swings round.
 
   python3 video/blender_clip.py -- --blend out/avatar.blend --results out/results.json \
-      --profile stroke_R_moderate_wheelchair --out out/frames/clip_ [--frames 120] [--style careful]
+      --profile stroke_R_moderate_wheelchair --out out/frames/clip_ [--frames 120] [--style careful] [--ending hold]
 
 The movement is staged to read as a person, not a machine (ideas from the "Builder design help - look and
 movement guide", Drive -> Builder help): the head turns to the target first; the reach starts at the trunk
@@ -138,6 +138,17 @@ def push_to_layer(av, name, blend, repeat=1.0):
     return strip
 
 
+def _hold_to_end(st):
+    """Same reach, but the hand stays on the target to the end of the clip (no return, the head keeps looking,
+    the breath stays paused). For clips whose last frame is held on screen, such as the demo video."""
+    st = dict(st)
+    # Push the hold and the return past the clip's last frame. They need different frames: two keys on the
+    # same frame overwrite each other, and the arm would drift back toward rest.
+    st["hold_end"], st["return_end"] = 2.0, 3.0
+    st["look_back"] = (2.0, 3.0)
+    return st
+
+
 def _f(frac, frames):
     return max(1, round(frac * frames))
 
@@ -180,8 +191,12 @@ def main(argv):
     ap.add_argument("--only-frame", type=int)
     ap.add_argument("--style", choices=["auto", *STYLES], default="auto",
                     help="movement timing; auto = confident for baseline profiles, careful for the rest")
+    ap.add_argument("--ending", choices=["return", "hold"], default="return",
+                    help="return: the arm comes back to rest; hold: the hand stays on the target to the last frame")
     a = ap.parse_args(argv)
     st = _style(a.profile, a.style)
+    if a.ending == "hold":
+        st = _hold_to_end(st)
 
     bpy.ops.wm.open_mainfile(filepath=os.path.abspath(a.blend))
     room = json.load(open(a.room))
