@@ -39,7 +39,99 @@ def parented_stick_figure(obj, coll, mat):
     head = bpy.context.active_object
     head.data.materials.append(mat)
     sr._move(head, coll)
+    # Face the head the way the body faces (its +Y), and give it a small nose so a head turn shows.
+    forward = (obj.matrix_world.to_3x3() @ Vector((0, 1, 0))).normalized()
+    head.rotation_euler = forward.to_track_quat("Y", "Z").to_euler()
+    bpy.ops.mesh.primitive_cone_add(radius1=0.03, depth=0.07, location=head.location + forward * 0.13)
+    nose = bpy.context.active_object
+    nose.rotation_euler = forward.to_track_quat("Z", "Y").to_euler()
+    nose.data.materials.append(mat)
+    sr._move(nose, coll)
+    _parent_obj(nose, head)
     _parent(head, obj, "trunk")
+    return head
+
+
+# Human-looking reach (Nov 13, 2026, from Heather's "Builder design help" papers: Chi et al. 2000 EMOTE,
+# Wiley & Hahn 1997, Badler's look-before-reach). Changes only how the clip moves, never a result.
+FPS = 24
+TIMING = {  # fractions of the clip
+    "confident": {"look": 0.03, "start": 0.08, "stagger": 0.03, "arrive": 0.38, "hold": 0.58, "back": 0.92},
+    "careful": {"look": 0.03, "start": 0.12, "stagger": 0.05, "arrive": 0.48, "hold": 0.66, "back": 0.97},
+}
+ORDER = {"trunk": 0, "shoulder_R": 0, "shoulder_L": 0, "elbow_R": 1, "elbow_L": 1, "wrist_R": 2, "wrist_L": 2}
+
+
+def _default_style(profile):
+    return "confident" if profile.startswith("baseline") or "trunk" in profile else "careful"
+
+
+def reach_keys(frames, style):
+    """Frame numbers for each joint group: (start, arrive, leave, rest). Shoulder first, then elbow, then wrist."""
+    t = TIMING[style]
+    f = lambda x: max(1, round(x * frames))  # noqa: E731
+    keys = {}
+    for order in (0, 1, 2):
+        start = f(t["start"] + order * t["stagger"])
+        keys[order] = (start, f(t["arrive"]), f(t["hold"]) + order * 2, f(t["back"]))
+    return keys
+
+
+def human_reach(av, pose, head, target, frames, style, coll):
+    keys = reach_keys(frames, style)
+    for n in REACH_BONES:
+        pb = av.pose.bones[n]
+        start, arrive, leave, back = keys[ORDER[n]]
+        for fr, value in ((start, (0, 0, 0)), (arrive, pose[n]), (leave, pose[n]), (back, (0, 0, 0))):
+            pb.rotation_euler = value
+            pb.keyframe_insert("rotation_euler", frame=fr)
+    _ease(av)
+    _breathe(av, frames)
+    # Look first: the head turns to the target before the shoulder moves, and back at the end.
+    aim = bpy.data.objects.new(f"{av.name}_look", None)
+    aim.location = target
+    coll.objects.link(aim)
+    con = head.constraints.new("DAMPED_TRACK")
+    con.target, con.track_axis = aim, "TRACK_Y"
+    t = TIMING[style]
+    for fr, inf in ((1, 0.0), (round(t["look"] * frames) + 4, 1.0), (round(t["hold"] * frames) + 4, 1.0),
+                    (round(t["back"] * frames), 0.0)):
+        con.influence = inf
+        con.keyframe_insert("influence", frame=fr)
+
+
+def _ease(av):
+    """Bezier keys with ease in and out, so moves start and stop softly."""
+    if not av.animation_data or not av.animation_data.action:
+        return
+    for fc in _fcurves(av.animation_data.action):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER"
+            kp.easing = "EASE_IN_OUT"
+            kp.handle_left_type = kp.handle_right_type = "AUTO_CLAMPED"
+
+
+def _breathe(av, frames):
+    """A slow 1.2-degree chest rise on a 4-second loop, added on top of the trunk's reach."""
+    for fc in _fcurves(av.animation_data.action):
+        if fc.data_path == 'pose.bones["trunk"].rotation_euler' and fc.array_index == 0:
+            m = fc.modifiers.new("FNGENERATOR")
+            m.function_type = "SIN"
+            m.amplitude = math.radians(1.2)
+            m.phase_multiplier = 2 * math.pi / (4 * FPS)
+            m.use_additive = True
+
+
+def _fcurves(action):
+    """F-curves of an action, for Blender's older and newer (layered) action formats."""
+    if hasattr(action, "fcurves") and len(action.fcurves):
+        return list(action.fcurves)
+    out = []
+    for layer in getattr(action, "layers", []):
+        for strip in layer.strips:
+            for bag in getattr(strip, "channelbags", []):
+                out.extend(bag.fcurves)
+    return out
 
 
 def _parent(child, arm, bone):
@@ -62,6 +154,11 @@ def main(argv):
     ap.add_argument("--frames", type=int, default=120)
     ap.add_argument("--samples", type=int, default=12)
     ap.add_argument("--only-frame", type=int)
+    ap.add_argument("--motion", choices=["human", "simple"], default="human",
+                    help="human: head turns first, joints move in turn, hold and return, breathing; "
+                         "simple: the old straight move from rest to reach")
+    ap.add_argument("--style", choices=["auto", "careful", "confident"], default="auto",
+                    help="how the reach moves; auto = careful for profiles with a condition, confident otherwise")
     a = ap.parse_args(argv)
 
     bpy.ops.wm.open_mainfile(filepath=os.path.abspath(a.blend))
@@ -86,7 +183,7 @@ def main(argv):
 
     fixtures = {f["id"]: f for f in room["fixtures"]}
     mat = sr.material("avatar", (0.2, 0.35, 0.75, 1))
-    reach_end = int(a.frames * 0.45)
+    style = a.style if a.style != "auto" else _default_style(a.profile)
     for r in results:
         if not (r["task"].startswith("reach") and r["angles_deg"] and r["target_local"]):
             continue
@@ -94,14 +191,19 @@ def main(argv):
         pose = {n: tuple(av.pose.bones[n].rotation_euler) for n in REACH_BONES}
         for n in REACH_BONES:
             av.pose.bones[n].rotation_euler = (0, 0, 0)
-        parented_stick_figure(av, coll, mat)
+        head = parented_stick_figure(av, coll, mat)
         if av.location.z < -0.01:
             sr.wheelchair(av, coll, rig.dims_of(base, os.path.join(ROOT, "data", "body.json"), "seated_wheelchair"))
-        for n in REACH_BONES:
-            pb = av.pose.bones[n]
-            pb.keyframe_insert("rotation_euler", frame=8)
-            pb.rotation_euler = pose[n]
-            pb.keyframe_insert("rotation_euler", frame=reach_end)
+        if a.motion == "simple":
+            reach_end = int(a.frames * 0.45)
+            for n in REACH_BONES:
+                pb = av.pose.bones[n]
+                pb.keyframe_insert("rotation_euler", frame=8)
+                pb.rotation_euler = pose[n]
+                pb.keyframe_insert("rotation_euler", frame=reach_end)
+        else:
+            target = av.matrix_world @ Vector(r["target_local"])
+            human_reach(av, pose, head, target, a.frames, style, coll)
 
     # Camera on a turntable around the room centre.
     pivot = bpy.data.objects.new("pivot", None)
