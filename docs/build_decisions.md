@@ -17,7 +17,7 @@ One row per decision: what we decided, the source (authors, year, journal or rep
 | Decision | Source | What we took | Not taken / why | Date |
 |---|---|---|---|---|
 | Split a measured arm length into upper arm, forearm and hand | Drillis & Contini 1966 segment ratios (via Winter, *Biomechanics and Motor Control of Human Movement*) | Ratios 0.186 / 0.146 / 0.108 of height, used as proportions of the measured arm | Using the ratios against height when the arm is measured: the measurement wins | Nov 2026 |
-| Seated wheelchair-user body sizes when nothing is measured | Paquet & Feathers 2004, *Ergonomics* (eyes only) | Acromion height, overall breadth, knee height ranges | Full tables stay in Drive | Nov 2026 |
+| Seated wheelchair-user body sizes when nothing is measured | Paquet & Feathers 2004, *International Journal of Industrial Ergonomics* 33:191-204 (eyes only) | Acromion height, overall breadth, knee height ranges | Full tables stay in Drive | Nov 2026 |
 | Check reach results against real wheelchair users | IDeA Center Design Resource #20, University at Buffalo | Share of measured users who could reach each height | Chart images | Nov 2026 |
 | Knee space under sinks and counters | 2010 ADA Standards, 306.3 | 27 in (0.685 m) minimum knee clearance | | Nov 2026 |
 | Trunk counts separately from height | AccessPath demo (two bodies, same height, trunk 23.5 vs 20 in) | Engine shows 8 cm difference in top reach, so trunk is measured, not estimated | | Nov 2026 |
