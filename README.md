@@ -107,3 +107,5 @@ python3 video/make_video.py --clip out/frames/clip_ --out out/AccessPath_demo.mp
 ```
 
 Needs `pip install bpy matplotlib pillow imageio-ffmpeg`, and `out/avatar.blend` with the profile's rig (see "In Blender" above).
+
+In the clip the head turns to the target first, then the reach runs trunk and shoulder, elbow, hand; the hand holds on the target and the arm returns, hand first. A slow breath runs underneath and pauses during the reach. `--style careful` (slow, held back; the default for every profile except baseline ones) or `--style confident` (quicker) sets the timing. Only the timing is styled: at the touch frame the pose is exactly the verifier's.
