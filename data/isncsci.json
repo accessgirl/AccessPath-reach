@@ -1,0 +1,115 @@
+{
+  "_about": "Vocabulary from the International Standards for Neurological Classification of Spinal Cord Injury (ISNCSCI), so spinal cord injury profiles use the same words as a clinical exam. Terms only: no joint limits come from this file.",
+  "source": "ISNCSCI Worksheet, ASIA/ISCoS, rev 04/2026. Rupp et al., ISNCSCI: Revised 2026. https://doi.org/10.46292/sci26-00067",
+  "status": "sourced",
+  "profile_name_pattern": "SCI_<level>_AIS_<grade>, e.g. SCI_C6_AIS_A. Anything after a further underscore is free (SCI_C6_AIS_A_wheelchair).",
+  "levels": [
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6",
+    "T7",
+    "T8",
+    "T9",
+    "T10",
+    "T11",
+    "T12",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "S1",
+    "S2",
+    "S3",
+    "S4-5"
+  ],
+  "key_muscles": [
+    {
+      "level": "C5",
+      "muscle": "Elbow flexors",
+      "joint": "elbow",
+      "motion": "flexion"
+    },
+    {
+      "level": "C6",
+      "muscle": "Wrist extensors",
+      "joint": "wrist",
+      "motion": "extension"
+    },
+    {
+      "level": "C7",
+      "muscle": "Elbow extensors",
+      "joint": "elbow",
+      "motion": "extension"
+    },
+    {
+      "level": "C8",
+      "muscle": "Finger flexors",
+      "joint": "hand",
+      "motion": "grip / finger flexion"
+    },
+    {
+      "level": "T1",
+      "muscle": "Finger abductors (little finger)",
+      "joint": "hand",
+      "motion": "finger abduction"
+    },
+    {
+      "level": "L2",
+      "muscle": "Hip flexors",
+      "joint": "hip",
+      "motion": "flexion"
+    },
+    {
+      "level": "L3",
+      "muscle": "Knee extensors",
+      "joint": "knee",
+      "motion": "extension"
+    },
+    {
+      "level": "L4",
+      "muscle": "Ankle dorsiflexors",
+      "joint": "ankle",
+      "motion": "dorsiflexion"
+    },
+    {
+      "level": "L5",
+      "muscle": "Long toe extensors",
+      "joint": "toe",
+      "motion": "extension"
+    },
+    {
+      "level": "S1",
+      "muscle": "Ankle plantar flexors",
+      "joint": "ankle",
+      "motion": "plantarflexion"
+    }
+  ],
+  "ais_grades": {
+    "A": "Complete. No sensory or motor function is preserved in the sacral segments S4-5.",
+    "B": "Sensory Incomplete. Sensory but not motor function is preserved below the neurological level and includes the sacral segments S4-5 (light touch or pin prick at S4-5 or deep anal pressure) AND no motor function is preserved more than three levels below the motor level on either side of the body.",
+    "C": "Motor Incomplete. Motor function is preserved at the most caudal sacral segments for voluntary anal contraction (VAC) OR the patient meets the criteria for sensory incomplete status and has some sparing of motor function more than three levels below the ipsilateral motor level on either side of the body. For AIS C, less than half of key muscle functions below the single NLI have a muscle grade >= 3.",
+    "D": "Motor Incomplete. Motor incomplete status as defined above, with at least half (half or more) of key muscle functions below the single NLI having a muscle grade >= 3.",
+    "E": "Normal. Sensation and motor function as tested with the ISNCSCI are graded as normal in all segments, and the patient had prior deficits. Someone without an SCI does not receive an AIS grade."
+  },
+  "muscle_grades": {
+    "0": "Total paralysis",
+    "1": "Palpable or visible contraction",
+    "2": "Active movement, full range of motion with gravity eliminated",
+    "3": "Active movement, full range of motion against gravity",
+    "4": "Active movement, full range of motion against gravity and moderate resistance in a muscle-specific position",
+    "5": "Normal active movement, full range of motion against gravity and full resistance",
+    "NT": "Not testable"
+  }
+}

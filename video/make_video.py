@@ -236,7 +236,7 @@ def s_results_factory(results):
     why = {"outlet_low": "Reaches it with the unaffected (left) arm",
            "outlet_counter": "Fingertip stops 19 cm short: counter is in the way",
            "switch_door": "Reachable, but above seated shoulder height",
-           "shelf_high": "Reachable, but ~21% of wheelchair users couldn't",
+           "shelf_high": "Reachable, but above shoulder height for many wheelchair users",
            "door_main": "Under the 32 in a wheelchair needs",
            "door_closet": "Wide enough for a wheelchair"}
 

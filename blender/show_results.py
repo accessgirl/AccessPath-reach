@@ -56,15 +56,58 @@ def _move(o, coll):
     coll.objects.link(o)
 
 
+CABINET_W, CABINET_D = 0.9, 0.6
+
+
+def _cabinet_here(fx, room):
+    """A sink or counter on the same wall already draws the cabinet under this fixture."""
+    p, n = Vector(fx["position"][:2]), Vector(fx["wall_normal"])
+    return any(o["type"] in ("sink", "counter") and Vector(o["wall_normal"]) == n
+               and (Vector(o["position"][:2]) - p).length < CABINET_W / 2 for o in room["fixtures"])
+
+
+def cabinet(fx, mat, coll):
+    """A sink or counter: the top at its height, open underneath to `knee_clearance_m` (or solid to the floor)."""
+    x, y, z = fx["position"]
+    n = Vector((*fx["wall_normal"], 0))
+    rot = math.atan2(n.y, n.x) + math.pi / 2
+    c = Vector((x, y, 0)) + n * CABINET_D / 2
+    top = box(fx["id"], c + Vector((0, 0, z - 0.02)), (CABINET_W, CABINET_D, 0.04), mat, coll)
+    top.rotation_euler.z = rot
+    wood = material("counter", (0.75, 0.7, 0.62, 1))
+    knee = fx.get("knee_clearance_m") or 0.0
+    if knee <= 0.0:
+        body = box(f"{fx['id']}_base", c + Vector((0, 0, (z - 0.04) / 2)), (CABINET_W, CABINET_D, z - 0.04), wood, coll)
+        body.rotation_euler.z = rot
+    else:
+        along = Vector((-n.y, n.x, 0))
+        apron = box(f"{fx['id']}_apron", c + Vector((0, 0, (knee + z - 0.04) / 2)),
+                    (CABINET_W, CABINET_D, max(z - 0.04 - knee, 0.01)), wood, coll)
+        apron.rotation_euler.z = rot
+        for sgn in (1, -1):
+            leg = box(f"{fx['id']}_side", c + along * sgn * (CABINET_W / 2 - 0.02) + Vector((0, 0, knee / 2)),
+                      (0.04, CABINET_D, knee), wood, coll)
+            leg.rotation_euler.z = rot
+    return top
+
+
 def build_room(room, results, coll, cutaway=()):
     """`cutaway` walls are drawn knee-high so a still image can see into the room."""
     wall_mat = material("wall", (0.85, 0.85, 0.82, 1))
+    xs = [v for w in room["walls"] for v in (w[0], w[2])]
+    ys = [v for w in room["walls"] for v in (w[1], w[3])]
+    centre = Vector(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, 0))
     for i, (x1, y1, x2, y2) in enumerate(room["walls"]):
         h = 0.3 if i in cutaway else room.get("wall_height", 2.4)
         a, b = Vector((x1, y1, 0)), Vector((x2, y2, 0))
-        o = box(f"wall_{i}", (a + b) / 2 + Vector((0, 0, h / 2)), ((b - a).length, 0.05, h), wall_mat, coll)
+        # The wall's inside face sits on the wall line, where the verifier puts it; its thickness goes outward.
+        out = Vector((-(b - a).y, (b - a).x, 0)).normalized()
+        if out.dot((a + b) / 2 - centre) < 0:
+            out = -out
+        o = box(f"wall_{i}", (a + b) / 2 + out * 0.025 + Vector((0, 0, h / 2)), ((b - a).length, 0.05, h), wall_mat, coll)
         o.rotation_euler.z = math.atan2(y2 - y1, x2 - x1)
-    floor = box("floor", (1.2, 1.5, -0.01), (2.6, 3.2, 0.02), material("floor", (0.6, 0.58, 0.55, 1)), coll)
+    floor = box("floor", (centre.x, centre.y, -0.01), (max(xs) - min(xs) + 0.2, max(ys) - min(ys) + 0.2, 0.02),
+                material("floor", (0.6, 0.58, 0.55, 1)), coll)
     floor.name = "floor"
 
     by_fixture = {r["fixture"]: r for r in results}
@@ -79,11 +122,13 @@ def build_room(room, results, coll, cutaway=()):
             o = box(fx["id"], Vector((x, y, 1.0)) + n * 0.04, (w, 0.02, 2.0), mat, coll)
             o.rotation_euler.z = math.atan2(n.y, n.x) + math.pi / 2
             z = 2.1
+        elif fx["type"] in ("sink", "counter"):
+            o = cabinet(fx, mat, coll)
         else:
             size = (0.3, 0.3, 0.03) if fx["type"] == "shelf" else (0.08, 0.02, 0.12)
             o = box(fx["id"], Vector((x, y, z)) + n * 0.02, size, mat, coll)
             o.rotation_euler.z = math.atan2(n.y, n.x) + math.pi / 2
-            if "obstruction" in fx:
+            if "obstruction" in fx and not _cabinet_here(fx, room):
                 ob = fx["obstruction"]
                 along = Vector((-n.y, n.x, 0))
                 c = Vector((x, y, ob["height_m"] / 2)) + n * ob["depth_m"] / 2
@@ -98,7 +143,7 @@ def wheelchair(obj, coll, dims):
     """Simple seat and wheels under a seated avatar, for the still image."""
     mat = material("wheelchair", (0.2, 0.2, 0.22, 1))
     m = obj.matrix_world
-    seat_h = dims["hip_h"] - 0.09
+    seat_h = dims.get("seat_top", dims["hip_h"] - 0.09)
     parts = [box("seat", m @ Vector((0, 0.18, seat_h - obj.location.z)), (0.45, 0.45, 0.04), mat, coll)]
     for sx in (1, -1):
         bpy.ops.mesh.primitive_cylinder_add(radius=0.3, depth=0.03,
@@ -127,14 +172,19 @@ def place_avatar(base, result, fx, coll):
     base_xy = fx_pos - rot @ Vector((t.x, t.y, 0))
     obj.location = (base_xy.x, base_xy.y, base.location.z)
     obj.rotation_euler = (0, 0, ang)
-    a = {k: math.radians(v) for k, v in result["angles_deg"].items()}
+    pose_arm(obj, arm, result["angles_deg"])
+    return obj
+
+
+def pose_arm(obj, arm, angles_deg):
+    """Set the trunk and one arm to joint angles named as the reach chain names them."""
+    a = {k: math.radians(v) for k, v in angles_deg.items()}
     obj.pose.bones["trunk"].rotation_euler.x = a.get("trunk_flex", 0)
     sh = obj.pose.bones[f"shoulder_{arm}"]
     sh.rotation_euler.x = a.get(f"shoulder_{arm}_flex", 0)
     sh.rotation_euler.z = a.get(f"shoulder_{arm}_abd", 0) * (-1 if arm == "R" else 1)
     obj.pose.bones[f"elbow_{arm}"].rotation_euler.x = a.get(f"elbow_{arm}_flex", 0)
     obj.pose.bones[f"wrist_{arm}"].rotation_euler.x = a.get(f"wrist_{arm}_flex", 0)
-    return obj
 
 
 def stick_figure(obj, coll, mat):
@@ -227,7 +277,7 @@ def main(argv):
             if a.render:
                 stick_figure(av, coll, body_mat)
                 if av.location.z < -0.01:
-                    wheelchair(av, coll, rig.body_dims(a.body, "seated_wheelchair"))
+                    wheelchair(av, coll, rig.dims_of(base, a.body, "seated_wheelchair"))
     if a.render:
         for o in coll.objects:  # turn labels toward the camera so none read backwards
             if o.type == "FONT":

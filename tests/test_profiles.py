@@ -29,8 +29,15 @@ def test_task_threshold_is_not_a_limit(library):
 
 def test_placeholders_flag_both_sides(library):
     p = compose(library, "arthritis_both")
-    for j in ["shoulder_R", "shoulder_L", "knee_R", "knee_L", "hand_L"]:
+    for j in ["shoulder_R", "shoulder_L", "hip_R", "hip_L", "hand_L"]:
         assert p.placeholder_flags([j]), j
+
+
+def test_filled_arthritis_cards_use_their_lower_edge(library):
+    p = compose(library, "arthritis_both")
+    assert p.limits["shoulder_R"]["flex"][1] == 66  # Jensen 2021: 96 ± 30
+    assert p.limits["knee_L"]["flex"][1] == 100.9  # Lee 2025: 114.3 ± 13.4
+    assert not p.placeholder_flags(["knee_L"])
 
 
 def test_kafo_locks_one_knee(library):

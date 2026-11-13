@@ -1,0 +1,24 @@
+{
+  "room_id": "test_bedroom",
+  "description": "Made-up 3.4 m x 3.6 m test bedroom with a closet, typical builder heights. Not a real home.",
+  "units": "m",
+  "wall_height": 2.4,
+  "walls": [[0, 0, 3.4, 0], [3.4, 0, 3.4, 3.6], [3.4, 3.6, 0, 3.6], [0, 3.6, 0, 0]],
+  "fixtures": [
+    {"id": "outlet_bedside", "type": "outlet", "position": [0.6, 3.6, 0.30], "wall_normal": [0, -1],
+     "approach": ["forward", "side"],
+     "note": "12 in outlet beside the bed: a common builder height"},
+    {"id": "outlet_desk", "type": "outlet", "position": [2.6, 3.6, 0.46], "wall_normal": [0, -1],
+     "approach": ["forward", "side"], "note": "18 in, open wall"},
+    {"id": "closet_rod", "type": "shelf", "position": [3.4, 1.9, 1.68], "wall_normal": [-1, 0],
+     "approach": ["forward", "side"], "note": "Closet rod at 66 in (touching the rod, tested like a shelf edge)"},
+    {"id": "thermostat", "type": "light_switch", "position": [0.0, 1.6, 1.52], "wall_normal": [1, 0],
+     "approach": ["forward", "side"], "note": "Thermostat at 60 in: a touch control, tested like a switch"},
+    {"id": "switch_bedroom", "type": "light_switch", "position": [1.0, 0.0, 1.22], "wall_normal": [0, 1],
+     "approach": ["forward", "side"], "note": "48 in"},
+    {"id": "door_bedroom", "type": "door", "position": [1.9, 0.0, 0.0], "wall_normal": [0, 1],
+     "clear_width_m": 0.82, "note": "32 in clear, just at the ADA minimum"},
+    {"id": "door_closet_bed", "type": "door", "position": [3.4, 0.6, 0.0], "wall_normal": [-1, 0],
+     "clear_width_m": 0.61, "note": "24 in clear: a common closet door"}
+  ]
+}
