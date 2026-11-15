@@ -1,13 +1,33 @@
 """Card library: load the spreadsheet (the source of truth) and check it before anything uses it."""
 from dataclasses import dataclass, field, asdict
+from datetime import date, datetime
 import json
 
 import openpyxl
 
+from .isncsci import parse_sci_name
+from .privacy import check_fields, IdentifyingDataError
+
 STATUSES = {"sourced", "interpolated", "placeholder"}
+VERIFIED_SOURCES = 5  # Heather's rule: a number is verified when at least 5 independent sources agree
+STALE_DAYS = 365
+SMALL_STUDY = 30  # Oct 1 QC rule: fewer people than this is flagged as a small study  # check-cards flags a card whose source hasn't been re-opened in this long
 RANGE_KINDS = {"joint_limits", "score_band", "task_threshold", "sweep_width", "envelope_shift", "reach_reduction"}
 POSTURES = {"standing", "seated_wheelchair"}
 SIDES = {"R", "L", "both", "none"}
+
+
+# Tape-measure inputs a profile may carry, in inches: column -> (what it is, plausible low, plausible high, postures).
+# The range is a typo check, not a body standard: a number outside it is almost certainly a mistake.
+MEASUREMENTS = {
+    "seat_height_in": ("floor to the top of the seat cushion, in the person's own chair", 12, 30, {"seated_wheelchair"}),
+    "seated_shoulder_in": ("seat to the top of the shoulder (acromion), sitting upright: the trunk measure", 15, 32,
+                           {"seated_wheelchair", "standing"}),
+    "arm_length_in": ("top of the shoulder (acromion) to the fingertip, arm straight", 18, 36,
+                      {"seated_wheelchair", "standing"}),
+    "knee_height_in": ("floor to the top of the kneecap, seated in the chair with feet on the footrest", 14, 34,
+                       {"seated_wheelchair"}),
+}
 
 
 class LibraryError(ValueError):
@@ -32,10 +52,43 @@ class Card:
     notes: str | None
     source: str | None
     status: str
+    ISB_term: str | None = None
+    source_type: str | None = None  # peer-reviewed study, review (secondary), textbook / clinical reference, ...
+    source_location: str | None = None  # page, table or section where the number appears
+    access_license: str | None = None  # e.g. "Open access, CC BY 4.0"; open access isn't the same as commercial use
+    last_checked: str | None = None  # YYYY-MM-DD a person last opened the source and confirmed the number
+    independent_sources: int = 0
+    contested_note: str | None = None
+    sample_size: int | None = None  # people the source measured; under SMALL_STUDY is flagged
+    checked_by: str | None = None
 
     @property
     def is_baseline(self):
         return self.condition == "baseline"
+
+    @property
+    def evidence(self):
+        """verified (5+ independent sources, none contesting), contested, or how far it is from verified."""
+        if self.contested_note:
+            return "contested"
+        if self.independent_sources >= VERIFIED_SOURCES:
+            return "verified"
+        return f"{self.independent_sources} of {VERIFIED_SOURCES} sources"
+
+    @property
+    def eyes_only(self):
+        """Source isn't open for commercial use (subscription or non-commercial licence). Kept, never thrown out,
+        but for AccessPath's own eyes: the number is cited, nothing from the source is shown to customers."""
+        lic = (self.access_license or "").upper()
+        return "NON-COMMERCIAL" in lic or "SUBSCRIPTION" in lic
+
+    def is_stale(self, today=None):
+        """Not confirmed against its source within STALE_DAYS (or never)."""
+        if self.status == "placeholder":
+            return False
+        if not self.last_checked:
+            return True
+        return ((today or date.today()) - date.fromisoformat(self.last_checked)).days > STALE_DAYS
 
 
 @dataclass
@@ -46,6 +99,21 @@ class Profile:
     mobility_aid: str
     affected_side: str
     card_ids: list[str] = field(default_factory=list)
+    settings: dict[str, float] = field(default_factory=dict)  # card_id -> value dialled in within its band
+    body_band: str | None = None
+    body_height_in: float | None = None  # dialled in within the body band
+    measured: dict[str, float] = field(default_factory=dict)  # tape-measure inputs, inches (see MEASUREMENTS)
+
+
+@dataclass
+class BodyBand:
+    """A height range treated as one group. Reach is tested at the shortest height, room at the tallest."""
+    band_id: str
+    label: str
+    stature_min_in: float
+    stature_max_in: float
+    source: str | None
+    status: str
 
 
 @dataclass
@@ -64,12 +132,14 @@ class Library:
     cards: dict[str, Card]
     profiles: dict[str, Profile]
     caps: list[PopulationCap]
+    bands: dict[str, BodyBand] = field(default_factory=dict)
 
     def to_json(self):
         return json.dumps({
             "cards": [asdict(c) for c in self.cards.values()],
             "profiles": [asdict(p) for p in self.profiles.values()],
             "population_caps": [asdict(c) for c in self.caps],
+            "body_bands": [asdict(b) for b in self.bands.values()],
         }, indent=2)
 
 
@@ -102,6 +172,17 @@ def _number(v, where, col):
         raise LibraryError(f"{where}: {col} is '{v}'. Use a number, or leave the cell empty if it isn't sourced yet.")
 
 
+def _day(v, where):
+    if v is None:
+        return None
+    if isinstance(v, (datetime, date)):
+        return v.strftime("%Y-%m-%d")
+    try:
+        return date.fromisoformat(str(v)).isoformat()
+    except ValueError:
+        raise LibraryError(f"{where}: last_checked is '{v}'. Use a date written YYYY-MM-DD, or leave it empty.")
+
+
 def _need(row, cols, where):
     missing = [c for c in cols if c not in row]
     if missing:
@@ -128,19 +209,68 @@ def load_library(path) -> Library:
             range_kind=row["range_kind"], strength=row.get("strength"), control=row.get("control"),
             laterality=row.get("laterality"), dependency_flags=row.get("dependency_flags"),
             notes=row.get("notes"), source=row.get("source"), status=row["status"],
+            ISB_term=row.get("ISB_term"),
+            source_type=row.get("source_type"), source_location=row.get("source_location"),
+            access_license=row.get("access_license"), last_checked=_day(row.get("last_checked"), where),
+            independent_sources=int(_number(row.get("independent_sources"), where, "independent_sources") or 0),
+            contested_note=row.get("contested_note"),
+            sample_size=None if row.get("sample_size") is None else int(_number(row["sample_size"], where, "sample_size")),
+            checked_by=row.get("checked_by"),
         )
         _check_card(card, where)
         cards[cid] = card
 
+    bands: dict[str, BodyBand] = {}
+    if "Body Bands" in wb.sheetnames:
+        for n, row in _rows(wb, "Body Bands"):
+            where = f"Body Bands row {n}"
+            _need(row, ["band_id", "stature_min_in", "stature_max_in", "source", "status"], where)
+            b = BodyBand(str(row["band_id"]), row.get("label") or "",
+                         _number(row["stature_min_in"], where, "stature_min_in"),
+                         _number(row["stature_max_in"], where, "stature_max_in"), row.get("source"), row["status"])
+            if b.stature_min_in is None or b.stature_max_in is None or b.stature_min_in > b.stature_max_in:
+                raise LibraryError(f"{where}: needs stature_min_in <= stature_max_in.")
+            if b.status not in STATUSES:
+                raise LibraryError(f"{where}: status '{b.status}' should be one of {sorted(STATUSES)}.")
+            bands[b.band_id] = b
+
+    if "Profiles" in wb.sheetnames:
+        try:
+            check_fields([c.value for c in wb["Profiles"][1]], "Profiles sheet")
+        except IdentifyingDataError as err:
+            raise LibraryError(str(err))
     profiles: dict[str, Profile] = {}
     for n, row in _rows(wb, "Profiles"):
         where = f"Profiles row {n}"
         _need(row, ["profile_id", "posture", "mobility_aid", "affected_side", "card_ids"], where)
-        ids = [c.strip() for c in (row["card_ids"] or "").split(",") if c.strip()]
+        ids, settings = [], {}
+        for item in (c.strip() for c in (row["card_ids"] or "").split(",") if c.strip()):
+            cid, _, dial = item.partition("@")
+            cid = cid.strip()
+            ids.append(cid)
+            if dial.strip():
+                settings[cid] = _number(dial.strip(), where, f"setting for '{cid}'")
         p = Profile(row["profile_id"], row.get("description") or "", row["posture"],
-                    row["mobility_aid"], str(row["affected_side"]), ids)
+                    row["mobility_aid"], str(row["affected_side"]), ids, settings,
+                    str(row["body_band"]) if row.get("body_band") else None,
+                    _number(row.get("body_height_in"), where, "body_height_in"))
+        for col, (what, lo, hi, postures) in MEASUREMENTS.items():
+            v = _number(row.get(col), where, col)
+            if v is None:
+                continue
+            if not lo <= v <= hi:
+                raise LibraryError(f"{where}: {col} is {v:g} in ({what}). That's outside {lo}-{hi} in, so it's "
+                                   "probably a typo or a measurement in centimetres. Re-measure and enter inches.")
+            if row["posture"] not in postures:
+                raise LibraryError(f"{where}: {col} only applies to a seated profile ({what}).")
+            p.measured[col] = v
         if p.profile_id in profiles:
             raise LibraryError(f"{where}: profile_id '{p.profile_id}' is used twice.")
+        if p.profile_id.upper().startswith("SCI"):
+            try:
+                parse_sci_name(p.profile_id)
+            except ValueError as err:
+                raise LibraryError(f"{where}: {err}")
         if p.posture not in POSTURES:
             raise LibraryError(f"{where}: posture '{p.posture}' should be one of {sorted(POSTURES)}.")
         if p.affected_side not in SIDES:
@@ -150,6 +280,15 @@ def load_library(path) -> Library:
                 raise LibraryError(f"{where}: card_id '{cid}' is not on the Cards sheet.")
             if cards[cid].is_baseline:
                 raise LibraryError(f"{where}: '{cid}' is a baseline card; baseline cards are always applied, list only condition cards.")
+        for cid, v in p.settings.items():
+            _check_setting(cards[cid], v, where)
+        if p.body_band is not None and p.body_band not in bands:
+            raise LibraryError(f"{where}: body_band '{p.body_band}' is not on the Body Bands sheet.")
+        if p.body_height_in is not None and p.body_band is not None:
+            b = bands[p.body_band]
+            if not b.stature_min_in <= p.body_height_in <= b.stature_max_in:
+                raise LibraryError(f"{where}: body_height_in {p.body_height_in:g} is outside band {b.band_id} "
+                                   f"({b.stature_min_in:g} to {b.stature_max_in:g} in). Pick the band it falls in.")
         if ids and p.affected_side == "none":
             raise LibraryError(f"{where}: lists condition cards but affected_side is 'none'.")
         profiles[p.profile_id] = p
@@ -161,7 +300,23 @@ def load_library(path) -> Library:
             caps.append(PopulationCap(row["cap_id"], row["applies_to_posture"], row["rule"],
                                       _number(row["value"], where, "value"), row.get("notes"),
                                       row.get("source"), row["status"]))
-    return Library(cards, profiles, caps)
+    return Library(cards, profiles, caps, bands)
+
+
+def band_edges(card: Card):
+    """The range a card's value may be dialled within: its band for a score band, 0 to its max for a joint limit."""
+    if card.range_kind == "score_band":
+        return card.ROM_min_deg, card.ROM_max_deg
+    return (card.ROM_min_deg or 0.0), card.ROM_max_deg
+
+
+def _check_setting(card: Card, v, where):
+    if card.status == "placeholder" or card.range_kind not in ("joint_limits", "score_band"):
+        raise LibraryError(f"{where}: '{card.card_id}' can't be dialled in: it has no sourced range to dial within.")
+    lo, hi = band_edges(card)
+    if lo is None or hi is None or not lo <= v <= hi:
+        raise LibraryError(f"{where}: setting {v:g} for '{card.card_id}' is outside its range "
+                           f"({lo:g} to {hi:g} degrees).")
 
 
 def _check_card(c: Card, where):
@@ -175,6 +330,11 @@ def _check_card(c: Card, where):
                            "Mark it sourced or interpolated, or empty the numbers.")
     if c.status == "sourced" and (not c.source or c.source.upper().startswith("NEEDED")):
         raise LibraryError(f"{where}: '{c.card_id}' is marked sourced but has no citation.")
+    if c.status == "sourced" and not (c.source_type and c.access_license):
+        raise LibraryError(f"{where}: '{c.card_id}' is marked sourced but source_type or access_license is empty. "
+                           "Record what kind of source it is and how it may be used.")
+    if c.independent_sources < 0:
+        raise LibraryError(f"{where}: independent_sources can't be negative.")
     if c.status != "placeholder" and c.range_kind == "joint_limits" and c.ROM_max_deg is None:
         raise LibraryError(f"{where}: '{c.card_id}' is {c.status} but ROM_max_deg is empty.")
     for v, col in [(c.ROM_min_deg, "ROM_min_deg"), (c.ROM_max_deg, "ROM_max_deg")]:

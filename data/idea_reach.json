@@ -1,0 +1,66 @@
+{
+  "_about": "Percent of measured manual wheelchair users who could reach a 4 x 4 in (100 x 100 mm) spot, by height from the floor and horizontal distance from the chair. Copied cell by cell from the two charts.",
+  "source": "D'Souza C, Steinfeld E, Paquet V (IDeA Center, University at Buffalo), Feathers D (Cornell). Design Resource #20: Functional Reach Capability for Wheeled Mobility Users. Updated Jan 4, 2011. Figures 1 and 2. Funded by the U.S. Access Board (TDP-02-C-0033) and NIDRR (H133E990005). https://idea.ap.buffalo.edu/wp-content/uploads/sites/110/2019/08/20.pdf",
+  "status": "sourced",
+  "task": "Placing an empty 2 oz (56 g) canister on a shelf; not a pushing, gripping or precision task.",
+  "measured": 235,
+  "recruited": 276,
+  "_measured_note": "Only the 235 of 276 manual wheelchair users who could grasp and reach above shoulder height were measured, so the chart percentages are of those 235. Multiplying by 235/276 gives the share of everyone recruited, counting the 41 who were left out as unable to reach (the cautious reading).",
+  "good_design_pct": 75,
+  "_good_design_note": "The charts' own colour key: 75-100% Good Design, 50-74% Fair, 25-49% Poor, 0-24% Very Bad.",
+  "lowest_measured_m": 0.4,
+  "_lowest_note": "Data for some or all participants was not collected below points considered unsafe to attempt reaching; the 300-399 mm row is not a measurement of ability. Their key finding 4: many could not safely reach the ADA 15 in (380 mm) low limit, and they recommend 28 in (700 mm).",
+  "recommended_low_m": 0.7,
+  "rows_mm": [1900, 1800, 1700, 1600, 1500, 1400, 1300, 1200, 1100, 1000, 900, 800, 700, 600, 500, 400, 300],
+  "forward": {
+    "_reference": "Horizontal distance from the forward-most point of the person or chair (footrests). Positive = reaching out past it, e.g. over a counter; negative = target closer, possible only with knee/toe space underneath.",
+    "offsets_mm": [300, 200, 100, 0, -100, -200, -300, -400, -500],
+    "pct": [
+      [0, 0, 0, 0, 0, 1, 1, 1, 1],
+      [0, 0, 0, 1, 1, 1, 1, 1, 1],
+      [0, 0, 2, 3, 5, 7, 7, 8, 8],
+      [0, 3, 8, 14, 18, 24, 31, 35, 37],
+      [2, 8, 16, 23, 33, 47, 57, 62, 63],
+      [7, 15, 26, 38, 54, 67, 79, 84, 87],
+      [13, 20, 36, 50, 69, 84, 92, 97, 97],
+      [16, 28, 43, 62, 77, 91, 96, 99, 99],
+      [20, 33, 53, 69, 84, 91, 98, 99, 99],
+      [22, 39, 57, 73, 87, 93, 98, 99, 100],
+      [26, 41, 60, 76, 90, 94, 99, 100, 100],
+      [29, 43, 62, 77, 90, 95, 99, 100, 100],
+      [30, 43, 60, 76, 89, 94, 97, 97, 97],
+      [29, 41, 56, 71, 81, 86, 88, 88, 88],
+      [14, 20, 27, 32, 37, 41, 42, 43, 43],
+      [1, 2, 3, 4, 5, 6, 6, 6, 6],
+      [0, 0, 0, 0, 0, 0, 0, 1, 1]
+    ]
+  },
+  "side": {
+    "_reference": "Horizontal distance from the side-most point of the person or chair. Positive = reaching out past it.",
+    "offsets_mm": [900, 800, 700, 600, 500, 400, 300, 200, 100, 0, -100],
+    "pct": [
+      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+      [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+      [0, 0, 0, 0, 1, 1, 4, 5, 6, 6, 6],
+      [0, 0, 0, 1, 3, 12, 22, 29, 36, 38, 38],
+      [0, 0, 1, 4, 11, 22, 36, 53, 62, 64, 64],
+      [0, 0, 2, 9, 20, 32, 59, 80, 86, 87, 87],
+      [0, 1, 5, 14, 28, 49, 80, 94, 96, 97, 97],
+      [0, 3, 8, 18, 36, 65, 92, 97, 98, 99, 99],
+      [0, 3, 11, 25, 46, 78, 95, 98, 98, 99, 99],
+      [1, 3, 11, 28, 53, 85, 96, 98, 99, 99, 99],
+      [1, 5, 14, 32, 57, 85, 96, 99, 99, 99, 99],
+      [1, 5, 14, 36, 58, 84, 95, 99, 99, 99, 99],
+      [1, 5, 14, 36, 58, 82, 95, 98, 98, 98, 98],
+      [1, 6, 14, 31, 50, 73, 87, 90, 90, 91, 91],
+      [0, 3, 7, 17, 27, 36, 43, 47, 47, 48, 48],
+      [0, 0, 0, 1, 3, 4, 7, 9, 9, 9, 9],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ]
+  },
+  "chair_edge_to_wall_m": {
+    "forward": 0.0,
+    "side": 0.1,
+    "_note": "Where the chair sits for each approach, matching body.json: forward = footrests at the wall; side = side of the chair about 0.1 m from the wall. Estimate (interpolated)."
+  }
+}

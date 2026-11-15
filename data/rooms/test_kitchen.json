@@ -1,0 +1,27 @@
+{
+  "room_id": "test_kitchen",
+  "description": "Made-up 3.6 m x 3.0 m test kitchen, typical builder heights. Not a real home.",
+  "units": "m",
+  "wall_height": 2.4,
+  "walls": [[0, 0, 3.6, 0], [3.6, 0, 3.6, 3.0], [3.6, 3.0, 0, 3.0], [0, 3.0, 0, 0]],
+  "fixtures": [
+    {"id": "outlet_backsplash", "type": "outlet", "position": [0.8, 3.0, 1.12], "wall_normal": [0, -1],
+     "approach": ["forward", "side"], "obstruction": {"depth_m": 0.64, "height_m": 0.91},
+     "note": "44 in, above a standard 25 in deep, 36 in high counter"},
+    {"id": "upper_cabinet", "type": "shelf", "position": [1.7, 3.0, 1.37], "wall_normal": [0, -1],
+     "approach": ["forward", "side"], "obstruction": {"depth_m": 0.64, "height_m": 0.91},
+     "note": "Lowest shelf of a wall cabinet, 54 in, over the counter"},
+    {"id": "sink_kitchen", "type": "sink", "position": [2.6, 3.0, 0.91], "wall_normal": [0, -1], "knee_clearance_m": 0.0,
+     "note": "Standard sink base cabinet: no open knee space"},
+    {"id": "prep_counter", "type": "counter", "position": [3.6, 1.2, 0.86], "wall_normal": [-1, 0], "knee_clearance_m": 0.699,
+     "note": "Lowered work counter, 34 in, open underneath 27.5 in high"},
+    {"id": "pantry_shelf", "type": "shelf", "position": [0.0, 1.2, 1.52], "wall_normal": [1, 0],
+     "approach": ["forward", "side"], "note": "Open pantry shelf at 60 in, nothing in front"},
+    {"id": "switch_kitchen", "type": "light_switch", "position": [0.0, 0.4, 1.07], "wall_normal": [1, 0],
+     "approach": ["forward", "side"], "note": "42 in"},
+    {"id": "door_kitchen", "type": "door", "position": [1.8, 0.0, 0.0], "wall_normal": [0, 1],
+     "clear_width_m": 0.91, "note": "36 in clear"},
+    {"id": "door_pantry", "type": "door", "position": [0.0, 2.4, 0.0], "wall_normal": [1, 0],
+     "clear_width_m": 0.71, "note": "28 in clear: a common pantry door"}
+  ]
+}

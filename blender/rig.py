@@ -29,18 +29,42 @@ AXIS_MAP = {
 }
 
 
-def body_dims(body_path, posture):
+def body_dims(body_path, posture, height_m=None, measured=None):
+    """Bone lengths, matching accesspath.kinematics.load_body: `height_m` scales the segments, and `measured`
+    (inches) replaces the height-ratio estimate for whatever was measured: seat height (seated hip pivot),
+    seat to shoulder (trunk), and arm length (split in the usual proportions)."""
     d = json.load(open(body_path))
-    h, r = d["height_m"], d["segment_ratios"]
+    h, r = (height_m or d["height_m"]), d["segment_ratios"]
     p = d["postures"][posture]
+    m = {k: v * 0.0254 for k, v in (measured or {}).items() if v is not None}
     hip_h = p["hip_height_m"] if p["hip_height_m"] is not None else r["hip_height"] * h
+    if posture != "standing" and "seat_height_in" in m:
+        hip_h = m["seat_height_in"]
+    arm_ratio = r["upper_arm"] + r["forearm"] + r["hand"]
+    arm = m.get("arm_length_in", arm_ratio * h)
     return {
-        "hip_h": hip_h, "hip_h_standing": r["hip_height"] * h, "trunk": (r["shoulder_height"] - r["hip_height"]) * h,
+        "hip_h": hip_h, "hip_h_standing": r["hip_height"] * h,
+        "trunk": m.get("seated_shoulder_in", (r["shoulder_height"] - r["hip_height"]) * h),
         "half_sh": r["shoulder_width"] * h / 2, "half_hip": r["hip_width"] * h / 2,
-        "upper_arm": r["upper_arm"] * h, "forearm": r["forearm"] * h, "hand": r["hand"] * h,
+        "upper_arm": arm * r["upper_arm"] / arm_ratio, "forearm": arm * r["forearm"] / arm_ratio,
+        "hand": arm * r["hand"] / arm_ratio,
         "thigh": (r["hip_height"] - r["knee_height"]) * h, "shank": (r["knee_height"] - r["ankle_height"]) * h,
         "foot": r["foot"] * h,
+        # Top of the seat cushion. A measured seat height is the trunk's pivot in the reach chain; the estimate
+        # is a hip-joint height, about 9 cm above the cushion.
+        "seat_top": hip_h if (posture != "standing" and "seat_height_in" in m) else hip_h - 0.09,
     }
+
+
+def dims_for(composed, body_path, posture):
+    """Body dims for a composed profile (from `python -m accesspath compose`), measured values included."""
+    return body_dims(body_path, posture, composed.get("height_m"), composed.get("measured"))
+
+
+def dims_of(obj, body_path, posture):
+    """Body dims an armature was built with (build_rig.py stores the profile's height and measurements on it)."""
+    stored = json.loads(obj.get("accesspath_body", "{}"))
+    return body_dims(body_path, posture, stored.get("height_m"), stored.get("measured"))
 
 
 def build_armature(dims, name=ARMATURE):

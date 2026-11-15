@@ -1,0 +1,29 @@
+{
+  "_about": "Measured size of wheelchair users seated in their own chairs, for the shoulder, door and knee-space checks. Only the values those checks use, copied from the paper's Tables 4 (women) and 5 (men), overall sample (manual and power together). Centimetres, as printed.",
+  "source": "Paquet V, Feathers D. An anthropometric study of manual and powered wheelchair users. International Journal of Industrial Ergonomics 33 (2004) 191-204, Tables 2, 4 and 5. doi:10.1016/j.ergon.2003.10.003",
+  "status": "sourced",
+  "sample": "121 adults (46 women, 75 men) in Buffalo, NY who use a wheelchair as their main way of getting around; 46% used power chairs (about 7% in the U.S.), so big chairs are over-represented. Measured sitting comfortably, arms on the armrests.",
+  "acromion_height_cm": {
+    "_definition": "Floor to the top of the shoulder (acromion), seated in the chair (Table 2).",
+    "women": {"left":  {"p5": 91.3, "p50": 100.5, "p95": 106.9},
+              "right": {"p5": 92.0, "p50": 99.6,  "p95": 109.7}},
+    "men":   {"left":  {"p5": 94.1, "p50": 104.6, "p95": 114.0},
+              "right": {"p5": 94.6, "p50": 104.6, "p95": 113.4}}
+  },
+  "overall_breadth_cm": {
+    "_definition": "Widest point of the person and chair together, side to side (Table 2).",
+    "women": {"p50": 68.9, "p95": 85.2},
+    "men":   {"p50": 70.9, "p95": 83.9},
+    "_power_chair_p95": "Power chairs alone: women 90.6, men 88.5."
+  },
+  "knee_height_cm": {
+    "_definition": "Floor to the top of the kneecap (suprapatella), seated in the chair (Table 2).",
+    "women": {"left":  {"p5": 53.9, "p50": 61.4, "p95": 70.8},
+              "right": {"p5": 54.6, "p50": 62.3, "p95": 71.5}},
+    "men":   {"left":  {"p5": 53.7, "p50": 63.5, "p95": 73.5},
+              "right": {"p5": 55.0, "p50": 64.2, "p95": 74.8}},
+    "_subgroup_note": "Some subgroups print higher 95th percentiles (women in power chairs, right: 81.0; men in manual chairs, right: 85.7). Those groups are small; the overall sample is used."
+  },
+  "ada_knee_clearance_top_m": 0.685,
+  "ada_knee_clearance_source": "ADA 2010 Standards 306.3.1: space under an element between 9 inches (230 mm) and 27 inches (685 mm) above the finish floor counts as knee clearance"
+}

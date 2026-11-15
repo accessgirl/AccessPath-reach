@@ -33,7 +33,7 @@ def main(argv):
     obj = rig.duplicate(base, name)
     rig.apply_limits(obj, composed)
     if composed["posture"] == "seated_wheelchair":
-        rig.pose_seated(obj, rig.body_dims(a.body, "seated_wheelchair"))
+        rig.pose_seated(obj, rig.dims_of(obj, a.body, "seated_wheelchair"))
     others = [o for o in bpy.data.objects if o.type == "ARMATURE" and o is not obj]
     obj.location.x = a.x if a.x is not None else 0.8 * len(others)
     bpy.ops.wm.save_mainfile()

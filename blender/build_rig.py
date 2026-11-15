@@ -24,7 +24,8 @@ def main(argv):
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     composed = json.load(open(a.profile))
-    obj = rig.build_armature(rig.body_dims(a.body, "standing"))
+    obj = rig.build_armature(rig.dims_for(composed, a.body, "standing"))
+    obj["accesspath_body"] = json.dumps({"height_m": composed.get("height_m"), "measured": composed.get("measured")})
     rig.apply_limits(obj, composed)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(a.out))
     print(f"Saved {a.out}: armature '{obj.name}' with {len(obj.data.bones)} bones")
