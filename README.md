@@ -27,12 +27,23 @@ The Blender skeleton and the IKPy reach chain are tested against each other: for
 
 | Result | Meaning |
 |---|---|
-| **PASS** | The avatar can do it, using only sourced or interpolated data |
-| **CAUTION** | The avatar can do it, but measured data says many real people in this group can't. For wheelchair profiles: fewer than 75% of the IDeA Center's measured manual wheelchair users could reach that spot (`data/idea_reach.json`); a door narrower than the widest 5% of measured users with their chair; or knee space that fits a typical user's knees but not the tallest (see below) |
-| **UNVERIFIED** | The avatar can do it only because able-bodied values stood in for data that isn't sourced yet. The real answer may be FAIL |
-| **FAIL** | The avatar can't do it, even with able-bodied values standing in for missing data |
+| **PASS: may offer** | The avatar can do it, using only sourced or interpolated data, so the designer may offer it. It does not say the design is safe |
+| **REACH CAUTION** | The avatar can do it, but measured data says many real people in this group can't. For wheelchair profiles: fewer than 75% of the IDeA Center's measured manual wheelchair users could reach that spot (`data/idea_reach.json`); a door narrower than the widest 5% of measured users with their chair; or knee space that fits a typical user's knees but not the tallest (see below) |
+| **SAFETY CAUTION** | A safety check found no safe value, or a known hazard applies. No number is given, only the reason. So far: a person standing on crutches gets no reach (no study has measured it) and a Balance caution instead |
+| **NOT CHECKED YET** | The avatar can do it only because able-bodied values stood in for data that isn't sourced yet, or a needed number isn't sourced. The real answer may be DO NOT USE. Never merged with DO NOT USE |
+| **DO NOT USE** | The avatar can't do it, even with able-bodied values standing in for missing data |
 
-The verifier tries both arms and every approach the fixture allows (facing the wall, or side-on). Arms backed by real data are tried first. A stroke avatar whose affected arm has gaps can still PASS using the unaffected arm, and the result says which arm it used.
+The words live in one place, `accesspath/results.py` (Heather's decisions, Nov 15, 2026). Every result also carries:
+
+- **layers**: each check's own answer, reason and basis. Reach is layer 1; safety layers (Balance, Slip, Transfer, Clearance, Layout) are added as they're built. The overall result is the worst layer, never an average, and numbers from different layers are never added together.
+- **came_from**: reach, safety, or both.
+- **held_because**: "fails the test" or "not checked yet", so the two reasons are never merged.
+- **safety_not_run**: the safety layers that aren't built yet, so a reach-only answer says so.
+- **steps**: a task can list its steps (step, movement, surface, wet_condition, contact, support, direction). Structure only so far; no numbers.
+
+Videos rendered before Nov 15 use the old words (PASS / CAUTION / UNVERIFIED / FAIL); their scripts translate the new results back with `legacy_status`.
+
+The verifier tries both arms and every approach the fixture allows (facing the wall, or side-on). Arms backed by real data are tried first. A stroke avatar whose affected arm has gaps can still pass using the unaffected arm, and the result says which arm it used.
 
 ## Running it
 
@@ -85,7 +96,7 @@ The avatar answers "can this person reach it?". For wheelchair profiles the veri
 
 - Each reach result records `population_pct`: the share who could reach that spot, using the approach most of them could manage (from the side or straight ahead).
 - It's the cautious reading: the 41 of 276 people who couldn't reach above shoulder height weren't measured, and are counted as unable. Between chart cells, the farther cell is used.
-- An avatar PASS becomes CAUTION when that share is under 75%, the study's own line for good design, or when the target is below 16 in (not measured; the study recommends 28 in as a low limit).
+- An avatar PASS becomes REACH CAUTION when that share is under 75%, the study's own line for good design, or when the target is below 16 in (not measured; the study recommends 28 in as a low limit).
 - The data is for manual chairs and a light object. Power chairs and scooters reach less straight ahead (D'Souza et al., RESNA 2009), so treat these figures as a best case for them.
 
 ## Checking size against measured wheelchair users
@@ -93,7 +104,7 @@ The avatar answers "can this person reach it?". For wheelchair profiles the veri
 `data/wheelchair_size.json` holds a few values from Paquet & Feathers (2004): 121 U.S. wheelchair users measured seated in their own chairs, manual and power (Int J Ind Ergon 33:191-204, Tables 4 and 5).
 
 - **Seated shoulder.** `check-avatar` and a test place the avatar's seated shoulder among them. Every body size tested falls inside the measured 5th-95th percentile range (91.3-114.0 cm). Even the shortest band (4 ft 11 in) puts it at 100.2 cm, right at the median woman (99.6-100.5 cm), so for the shorter half of women in chairs the avatar reaches high. The IDeA check above is what covers them.
-- **Doors.** A wheelchair door that meets the ADA 32 in (0.815 m) but is under 0.852 m is CAUTION: about 1 in 20 measured users are wider than that with their chair (95th percentile 85.2 cm for women, 83.9 cm for men; power chairs up to 90.6 cm).
+- **Doors.** A wheelchair door that meets the ADA 32 in (0.815 m) but is under 0.852 m is REACH CAUTION: about 1 in 20 measured users are wider than that with their chair (95th percentile 85.2 cm for women, 83.9 cm for men; power chairs up to 90.6 cm).
 - **Knee space.** The `pull_under` task (wheelchair profiles only) reads a sink or counter's `knee_clearance_m`, the height of the open space underneath. PASS at or above the tallest 95th-percentile seated knee height (74.8 cm); FAIL below the lowest median (61.4 cm); CAUTION between. The ADA's 27 in (685 mm) knee-clearance height lands in CAUTION.
 - **Caveats (the authors'):** 46% of the sample used power chairs (about 7% nationally), and it wasn't representative by sex, chair or disability.
 
@@ -147,7 +158,7 @@ These are in `data/body.json` and the card library, each marked with where it ca
 
 - **AutoCAD/DXF room import.** Rooms are JSON for now (`data/rooms/test_bathroom.json`).
 - **Leg-chain envelopes.** The doorway check uses a width, not a swept leg.
-- **Hallway widths and gait sweep for canes, crutches and walkers.** Door widths for these aids are in (32 in / 815 mm, U.S. Access Board ADAAG Appendix A4.2.1(2)), with crutches flagged CAUTION under 840 mm (a UK estimate). Hallways need 36 in (915 mm) by the same source, but rooms don't have hallways yet.
+- **Hallway widths and gait sweep for canes, crutches and walkers.** Door widths for these aids are in (32 in / 815 mm, U.S. Access Board ADAAG Appendix A4.2.1(2)), with crutches flagged REACH CAUTION under 840 mm (a UK estimate). Hallways need 36 in (915 mm) by the same source, but rooms don't have hallways yet.
 - **Hand/finger cards.**
 - **Using the `strength`, `control` and `dependency_flags` columns.** They're recorded but don't change results yet.
 - **Shoulder rotation and forearm pronation/supination cards.**

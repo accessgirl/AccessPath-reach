@@ -47,17 +47,17 @@ def test_shoulder_report_reads_plainly():
     assert "106.0 cm" in text and "women 50th-95th" in text and "Paquet & Feathers" in text
 
 
-@pytest.mark.parametrize("width,status", [(0.80, "FAIL"), (0.83, "CAUTION"), (0.86, "PASS")])
+@pytest.mark.parametrize("width,status", [(0.80, "DO NOT USE"), (0.83, "REACH CAUTION"), (0.86, "PASS")])
 def test_wheelchair_door_widths(library, width, status):
     p = compose(library, "baseline_wheelchair")
     r = check_doorway(p, load_body(DATA / "body.json", p.posture), {"task_id": "clear_doorway", "joints": []},
                       {"id": "d", "clear_width_m": width})
     assert r.status == status
-    if status == "CAUTION":
+    if status == "REACH CAUTION":
         assert "1 in 20" in r.reason and "Paquet & Feathers" in r.reason
 
 
-@pytest.mark.parametrize("underside,status", [(0.60, "FAIL"), (0.69, "CAUTION"), (0.75, "PASS")])
+@pytest.mark.parametrize("underside,status", [(0.60, "DO NOT USE"), (0.69, "REACH CAUTION"), (0.75, "PASS")])
 def test_knee_space(library, underside, status):
     r = check_knee_space(compose(library, "baseline_wheelchair"), {"task_id": "pull_under"},
                          {"id": "s", "knee_clearance_m": underside}, SIZE)
@@ -71,12 +71,12 @@ def test_ada_height_knee_space_is_caution_not_pass(library):
     assert "meets the ADA's 27 in" in r.reason
 
 
-def test_knee_space_missing_from_room_is_unverified(library):
+def test_knee_space_missing_from_room_is_not_checked_yet(library):
     r = check_knee_space(compose(library, "baseline_wheelchair"), {"task_id": "pull_under"}, {"id": "s"}, SIZE)
-    assert r.status == "UNVERIFIED"
+    assert r.status == "NOT CHECKED YET"
 
 
 def test_knee_space_only_checked_for_wheelchair_users(library):
     rs = run(library, load_json(DATA / "rooms" / "test_bathroom.json"), load_json(DATA / "tasks.json")["tasks"],
              DATA / "body.json", ["baseline_wheelchair", "baseline_standing"], ["pull_under"])
-    assert [(r.profile, r.fixture, r.status) for r in rs] == [("baseline_wheelchair", "sink_vanity", "CAUTION")]
+    assert [(r.profile, r.fixture, r.status) for r in rs] == [("baseline_wheelchair", "sink_vanity", "REACH CAUTION")]

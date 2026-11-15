@@ -10,6 +10,7 @@ from .kinematics import load_body, arm_chain, envelope
 from .profiles import compose
 from .verify import run, load_json, summary_table, to_json
 from . import seated_size
+from .results import STATUSES, LABEL, DO_NOT_USE
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -108,11 +109,11 @@ def main(argv=None):
         results = run(lib, room, load_json(a.tasks)["tasks"], a.body, a.profile, a.task)
         print(summary_table(results))
         counts = Counter(r.status for r in results)
-        print("\n" + ", ".join(f"{counts[s]} {s}" for s in ["PASS", "CAUTION", "UNVERIFIED", "FAIL"]))
+        print("\n" + ", ".join(f"{counts[s]} {LABEL[s]}" for s in STATUSES))
         if a.out:
             Path(a.out).write_text(to_json(results))
             print(f"Full results: {a.out}")
-        return 1 if counts["FAIL"] else 0
+        return 1 if counts[DO_NOT_USE] else 0
 
 
 def _write_or_print(text, out):

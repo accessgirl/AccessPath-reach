@@ -4,7 +4,7 @@
   blender out/avatar.blend --python blender/show_results.py -- --room data/rooms/test_bathroom.json \
       --results out/results.json --profile stroke_R_moderate [--render out/view.png]
 
-Needs the profile's rig in the file (apply_profile.py). Green PASS, amber CAUTION, grey UNVERIFIED, red FAIL.
+Needs the profile's rig in the file (apply_profile.py). Green PASS, amber REACH CAUTION, orange SAFETY CAUTION, grey NOT CHECKED YET, red DO NOT USE.
 """
 import argparse
 import json
@@ -17,8 +17,9 @@ import bpy  # noqa: E402
 from mathutils import Vector, Matrix  # noqa: E402
 import rig  # noqa: E402
 
-COLORS = {"PASS": (0.15, 0.6, 0.3, 1), "CAUTION": (0.95, 0.65, 0.1, 1),
-          "UNVERIFIED": (0.55, 0.55, 0.6, 1), "FAIL": (0.85, 0.15, 0.15, 1)}
+COLORS = {"PASS": (0.15, 0.6, 0.3, 1), "REACH CAUTION": (0.95, 0.65, 0.1, 1),
+          "SAFETY CAUTION": (0.95, 0.4, 0.05, 1), "NOT CHECKED YET": (0.55, 0.55, 0.6, 1),
+          "DO NOT USE": (0.85, 0.15, 0.15, 1)}
 
 
 def material(name, rgba):
@@ -113,7 +114,7 @@ def build_room(room, results, coll, cutaway=()):
     by_fixture = {r["fixture"]: r for r in results}
     for fx in room["fixtures"]:
         r = by_fixture.get(fx["id"])
-        status = r["status"] if r else "UNVERIFIED"
+        status = r["status"] if r else "NOT CHECKED YET"
         mat = material(f"status_{status}", COLORS[status])
         x, y, z = fx["position"]
         n = Vector((*fx["wall_normal"], 0))

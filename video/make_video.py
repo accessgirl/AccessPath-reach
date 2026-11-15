@@ -18,6 +18,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from accesspath.results import legacy_status  # noqa: E402
 
 W, H, FPS = 1280, 720, 24
 BG = (246, 244, 239)
@@ -320,6 +321,8 @@ def main():
     a = ap.parse_args()
 
     results = json.loads(Path(a.results).read_text())
+    for r in results:
+        r["status"] = legacy_status(r["status"])  # this video uses the pre-Nov 15 words
     env = EnvelopeScene()
     clip = ClipScene(a.clip, a.clip_frames)
     scenes = [

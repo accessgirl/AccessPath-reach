@@ -33,6 +33,7 @@ from make_video import (W, H, FPS, BG, INK, MUTED, ACCENT, STATUS, font, text, r
 from accesspath.cards import load_library  # noqa: E402
 from accesspath.profiles import compose  # noqa: E402
 from accesspath.kinematics import load_body, arm_chain, envelope  # noqa: E402
+from accesspath.results import legacy_status  # noqa: E402
 
 PROFILE = "stroke_R_moderate_wheelchair"
 SR = 24000
@@ -120,6 +121,8 @@ class Story:
         self.room = json.loads((ROOT / "data" / "rooms" / "test_bathroom.json").read_text())
         self.fx = {f["id"]: f for f in self.room["fixtures"]}
         self.results = [r for r in json.loads(Path(a.results).read_text()) if r["profile"] == PROFILE]
+        for r in self.results:
+            r["status"] = legacy_status(r["status"])  # this video uses the pre-Nov 15 words
         self.clips = Path(a.clips)
         self.bodyjson = json.loads((ROOT / "data" / "body.json").read_text())
 

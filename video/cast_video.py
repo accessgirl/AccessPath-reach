@@ -31,6 +31,7 @@ from walkthrough import Scene, Voice, para, chip, inches, SR, CLIP_FPS, WHITE  #
 from accesspath.cards import load_library  # noqa: E402
 from accesspath.profiles import compose  # noqa: E402
 from accesspath.kinematics import load_body  # noqa: E402
+from accesspath.results import legacy_status  # noqa: E402
 
 ROOMS = [("bathroom", "Bathroom"), ("kitchen", "Kitchen"), ("bedroom", "Bedroom")]
 CAST = [  # profile, short name, one-line description
@@ -74,6 +75,7 @@ class Story:
         for key, _ in ROOMS:
             self.rooms[key] = json.loads((ROOT / "data" / "rooms" / f"test_{key}.json").read_text())
             for r in json.loads((ROOT / "out" / f"results_{key}.json").read_text()):
+                r["status"] = legacy_status(r["status"])  # this video uses the pre-Nov 15 words
                 self.res[(r["profile"], key, r["fixture"])] = r
         self.people = {pid: compose(self.lib, pid) for pid, _, _ in CAST}
         self.bodies = {pid: load_body(ROOT / "data" / "body.json", p.posture, p.height_m, p.measured)

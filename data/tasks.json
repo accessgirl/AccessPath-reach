@@ -1,5 +1,5 @@
 {
-  "_about": "Named tasks. 'joints' is the chain that is in play; a result is UNVERIFIED if any of these joints relies on a placeholder card. Side-specific joints get _R / _L added for the arm or legs in use.",
+  "_about": "Named tasks. 'joints' is the chain that is in play; a result is NOT CHECKED YET if any of these joints relies on a placeholder card. Side-specific joints get _R / _L added for the arm or legs in use. A task may also list 'steps' (Heather's step-by-step rule, Nov 15, 2026): each step is an object using only the fields step, movement, surface, wet_condition, contact, support, direction (see accesspath/results.py STEP_FIELDS). Steps are structure only so far; no numbers.",
   "tasks": [
     {"task_id": "reach_outlet", "kind": "reach", "fixture_types": ["outlet"],
      "joints": ["trunk", "shoulder", "elbow", "wrist", "hand"],

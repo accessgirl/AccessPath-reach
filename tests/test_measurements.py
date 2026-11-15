@@ -19,7 +19,7 @@ def highest_reach_cm(library, pid):
     best = None
     for cm in range(150, 230, 2):
         fx = {"id": "x", "type": "shelf", "position": [0, 0, cm / 100], "approach": ["side"]}
-        if check_reach(p, b, TASK, fx, [], None).status in ("PASS", "CAUTION"):
+        if check_reach(p, b, TASK, fx, [], None).status in ("PASS", "REACH CAUTION"):
             best = cm
     return best
 
@@ -50,7 +50,7 @@ def test_personal_knee_height_drives_the_knee_check(library):
     p, b = body_for(library, "wheelchair_long_trunk")  # knee 22 in = 55.9 cm, allowance 5 cm
     def status(under_m):
         return check_knee_space(p, {"task_id": "k"}, {"id": "s", "knee_clearance_m": under_m}, None, b).status
-    assert status(0.55) == "FAIL" and status(0.58) == "CAUTION" and status(0.62) == "PASS"
+    assert status(0.55) == "DO NOT USE" and status(0.58) == "REACH CAUTION" and status(0.62) == "PASS"
 
 
 def test_centimetres_are_caught_as_a_typo(tmp_path):

@@ -21,7 +21,7 @@ AXES = {
 class Flag:
     card_id: str
     joints: list[str]
-    level: str  # "placeholder": results that use these joints are UNVERIFIED; "note": context only
+    level: str  # "placeholder": results that use these joints are NOT CHECKED YET; "note": context only
     message: str
 
 
@@ -88,7 +88,7 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
         if card.status == "placeholder":
             out.flags.append(Flag(cid, joints, "placeholder",
                                   f"{card.condition} {card.DOF_axis} is not sourced yet ({card.joint_id}). "
-                                  "Results that depend on it use baseline values and are marked UNVERIFIED."))
+                                  "Results that depend on it use baseline values and are marked NOT CHECKED YET."))
             continue
         if axis is None or card.range_kind not in ("joint_limits", "score_band"):
             out.flags.append(Flag(cid, joints, "note",
@@ -116,7 +116,7 @@ def compose(library: Library, profile_id: str) -> ComposedProfile:
         out.applied.append(cid)
 
     # A condition that affects a joint but gives no number for one of its motions leaves that motion at
-    # able-bodied values. That's a gap, same as a placeholder: results relying on it are UNVERIFIED.
+    # able-bodied values. That's a gap, same as a placeholder: results relying on it are NOT CHECKED YET.
     placeheld = {j for f in out.flags if f.level == "placeholder" for j in f.joints}
     for j in sorted(affected - placeheld):
         dofs = touched.get(j, set())

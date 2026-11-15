@@ -1,10 +1,14 @@
-"""Floor-plan test: every profile x task x fixture in a room gets PASS / FAIL / UNVERIFIED / CAUTION.
+"""Floor-plan test: every profile x task x fixture in a room gets one result (words in results.py).
 
-PASS        the avatar can do it, using only sourced or interpolated data
-CAUTION     the avatar can do it, but a population statistic says many real people in this group can't
-UNVERIFIED  the avatar can do it only because a placeholder card fell back to baseline (baseline is
-            optimistic, so the real answer may be FAIL); or a needed number isn't sourced yet
-FAIL        the avatar can't do it, even with baseline standing in for any placeholders
+Reach layer (the Reach Envelope, unchanged):
+PASS             the avatar can do it, using only sourced or interpolated data; the designer may offer it
+REACH CAUTION    the avatar can do it, but a population statistic says many real people in this group can't
+NOT CHECKED YET  the avatar can do it only because a placeholder card fell back to baseline (baseline is
+                 optimistic, so the real answer may be DO NOT USE); or a needed number isn't sourced yet
+DO NOT USE       the avatar can't do it, even with baseline standing in for any placeholders
+
+Safety layers run where they're built (so far: Balance, for a person standing on crutches). Each result keeps
+every layer's own answer; the overall result is the worst layer, and says which kind of test it came from.
 """
 import json
 from dataclasses import dataclass, field, asdict
@@ -17,8 +21,9 @@ from .kinematics import load_body, arm_chain, reach
 from .profiles import compose, ComposedProfile
 from .privacy import check_tree
 from . import population, seated_size
+from .results import (PASS, REACH_CAUTION, SAFETY_CAUTION, DO_NOT_USE, NOT_CHECKED_YET, LABEL, STATUSES,
+                      SAFETY_LAYERS, REACH, LayerResult, combine, check_steps)
 
-RANK = {"FAIL": 3, "UNVERIFIED": 2, "CAUTION": 1, "PASS": 0}
 TOUCH_TOL = 0.01  # the fingertip may touch the wall surface
 STEP_BACK = [0.0, 0.15, 0.3, 0.45]  # the avatar may stand further back to lean in
 SLIDE = [0.0, 0.15, 0.3]  # side approach: where the fixture sits along the avatar's body
@@ -42,6 +47,16 @@ class Result:
     body: str = ""  # which body size was tested (default, a body band, or a measured height)
     population_pct: int | None = None  # share of measured wheelchair users who could reach it (IDeA Center)
     inputs: list[dict] = field(default_factory=list)  # every value the result rests on, with its card and status
+    layers: list[dict] = field(default_factory=list)  # each layer's own result, reason and basis
+    came_from: str = ""  # reach, safety, or both
+    held_because: str | None = None  # "fails the test" or "not checked yet"; never merged
+    steps: list[dict] = field(default_factory=list)  # the task's steps, if it has them (structure only so far)
+    safety_not_run: list[str] = field(default_factory=list)  # safety layers not built yet, so not in the result
+    _extra_layers: list = field(default_factory=list, repr=False)  # safety layers found while checking
+
+    @property
+    def label(self):
+        return LABEL[self.status]
 
 
 def load_json(path):
@@ -75,15 +90,51 @@ def run(library: Library, room: dict, tasks: list[dict], body_path, profile_ids=
                     r = check_doorway(profile, body, task, fx)
                 r.room = room["room_id"]
                 r.body = profile.height_note or "default body (body.json)"
+                _finish(r, task)
                 results.append(r)
     return results
+
+
+def _finish(r: Result, task):
+    """Put the Reach answer in as layer 1, add any safety layers, and work out the overall result."""
+    layers = [LayerResult(REACH, r.status, r.reason)] + r._extra_layers
+    r.layers = [l.to_dict() for l in layers]
+    r.status, r.came_from, r.held_because = combine(layers)
+    if r._extra_layers:
+        r.reason = " ".join(f"{l.layer.capitalize()}: {l.reason}" for l in layers)
+    ran = {l.layer for l in layers}
+    r.safety_not_run = [l for l in SAFETY_LAYERS if l not in ran]
+    r.steps = check_steps(task)
+    del r._extra_layers[:]
 
 
 def _side_joints(names, side):
     return [n if n == "trunk" else f"{n}_{side}" for n in names]
 
 
+CRUTCH_NO_REACH = ("No reach is given. No study has measured reach while a person stands on crutches, on any "
+                   "floor (searched Nov 14, 2026), so an able-bodied reach can't stand in for it.")
+CRUTCH_BALANCE = ("Both hands are on the crutches for support, so reaching while standing isn't shown to be safe. "
+                  "Bring the item to the person, or test the task seated.")
+CRUTCH_WET = " Do not walk on a wet floor with crutches."
+CRUTCH_BASIS = ("Stall → Pivot rule and worst-case rule (Heather, Nov 14, 2026); Safety Envelope Definition "
+                "(Nov 14, 2026); no reach-on-crutches study found (Crutches: Standing Reach and Gait, Nov 14, 2026).")
+
+
+def _crutch_user_standing(profile: ComposedProfile):
+    return profile.mobility_aid == "crutches" and profile.posture == "standing"
+
+
 def check_reach(profile: ComposedProfile, body, task, fx, caps, pop=None) -> Result:
+    if _crutch_user_standing(profile):
+        # Reach stalls (no study), so the Balance layer takes over: a caution with its reason, never a distance.
+        r = Result("", profile.profile_id, task["task_id"], fx["id"], NOT_CHECKED_YET, CRUTCH_NO_REACH)
+        wet = "wet" in profile.description.lower()
+        r._extra_layers.append(LayerResult("balance", SAFETY_CAUTION, CRUTCH_BALANCE + (CRUTCH_WET if wet else ""),
+                                           CRUTCH_BASIS))
+        r.flags += [f.message for f in profile.placeholder_flags(_side_joints(task["joints"], "R") +
+                                                                 _side_joints(task["joints"], "L"))]
+        return r
     h = fx["position"][2]
     obst = fx.get("obstruction")
     chains = {arm: arm_chain(body, profile, arm) for arm in ("R", "L")}
@@ -106,16 +157,16 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps, pop=None) -> Res
 
     if verified:
         a, arm, r = verified[0]
-        base.status, base.reason = "PASS", f"Reached with the {_arm(arm)} arm, {a} approach."
+        base.status, base.reason = PASS, f"Reached with the {_arm(arm)} arm, {a} approach."
     elif ok:
         a, arm, r = ok[0]
-        base.status = "UNVERIFIED"
+        base.status = NOT_CHECKED_YET
         base.reason = (f"Reached with the {_arm(arm)} arm, {a} approach, but only by using able-bodied values "
-                       "where this condition has no data yet. The real answer may be FAIL.")
+                       "where this condition has no data yet. The real answer may be DO NOT USE.")
         base.flags += [f.message for f in blocked(arm)]
     else:
         a, arm, r = min(attempts, key=lambda t: t[2].error_m)
-        base.status = "FAIL"
+        base.status = DO_NOT_USE
         miss = "cannot reach without passing through the wall or counter" if r.error_m == float("inf") \
             else f"fingertip stops {r.error_m * 100:.0f} cm short"
         base.reason = f"Out of reach at {h:.2f} m: best try ({_arm(arm)} arm, {a} approach) {miss}."
@@ -132,10 +183,10 @@ def check_reach(profile: ComposedProfile, body, task, fx, caps, pop=None) -> Res
     if pop is not None:
         _population_check(base, pop, fx, h, obst)
         return base
-    if base.status == "PASS":
+    if base.status == PASS:
         for cap in caps:
             if cap.rule == "target_above_shoulder_height" and h > body.shoulder_height:
-                base.status = "CAUTION"
+                base.status = REACH_CAUTION
                 base.reason += (f" The target ({h:.2f} m) is above seated shoulder height ({body.shoulder_height:.2f} m): "
                                 f"{cap.notes}")
     return base
@@ -171,21 +222,21 @@ def _population_check(base, pop, fx, h, obst):
     75% of them could manage becomes CAUTION; the share is recorded on every result."""
     s = population.best_share(pop, fx["approach"], h, obst["depth_m"] if obst else 0.0)
     base.population_pct = s.pct
-    if base.status != "PASS":
+    if base.status != PASS:
         return
     who = (f"{s.pct_measured}% of the {pop['measured']} measured manual wheelchair users who could reach above "
            f"shoulder height, counting the {pop['recruited'] - pop['measured']} who couldn't as unable "
            "(IDeA Center, Design Resource #20)")
     if s.note == "below":
-        base.status = "CAUTION"
+        base.status = REACH_CAUTION
         base.reason += (f" But {h * 39.37:.0f} in is below 16 in, the lowest height the IDeA Center study measured. "
                         "It found many wheelchair users couldn't safely reach the ADA's 15 in low limit and "
                         "recommends 28 in instead.")
     elif s.pct is None:
-        base.status = "CAUTION"
+        base.status = REACH_CAUTION
         base.reason += " But that's farther from the chair than the IDeA Center study measured anyone reaching."
     elif s.pct < pop["good_design_pct"]:
-        base.status = "CAUTION"
+        base.status = REACH_CAUTION
         base.reason += (f" But only about {s.pct}% of measured wheelchair users could reach this spot "
                         f"(best case, reaching {_way(s.approach)}): {who}. The study's own line for good design is "
                         f"{pop['good_design_pct']}%.")
@@ -255,25 +306,25 @@ def check_doorway(profile: ComposedProfile, body, task, fx) -> Result:
     width = fx["clear_width_m"]
     r = Result("", profile.profile_id, task["task_id"], fx["id"], "", "")
     if need is None or need["value"] is None:
-        r.status = "UNVERIFIED"
+        r.status = NOT_CHECKED_YET
         r.reason = f"No sourced clear width for '{profile.mobility_aid}' yet."
         if need:
             r.flags.append(need["source"])
         return r
     if width < need["value"]:
-        r.status = "FAIL"
+        r.status = DO_NOT_USE
         r.reason = f"Clear width {width:.3f} m is under the {need['value']:.3f} m needed ({need['source']})."
         return r
-    r.status = "PASS"
+    r.status = PASS
     r.reason = f"Clear width {width:.3f} m meets the {need['value']:.3f} m needed ({need['source']})."
     if need.get("caution_below") and width < need["caution_below"]:
-        r.status = "CAUTION"
+        r.status = REACH_CAUTION
         why = need.get("caution_why") or f"the width of a person using {profile.mobility_aid} in another source"
         r.reason += f" But it is under {need['caution_below']:.3f} m, {why} ({need['caution_source']})."
     legs = _side_joints(task["joints"], "R") + _side_joints(task["joints"], "L")
     flags = profile.placeholder_flags(legs)
     if flags:
-        r.status = "UNVERIFIED"
+        r.status = NOT_CHECKED_YET
         r.reason += " But the leg data this depends on isn't sourced yet."
         r.flags += [f.message for f in flags]
     return r
@@ -284,16 +335,16 @@ def check_knee_space(profile: ComposedProfile, task, fx, size, body=None) -> Res
     if body is not None and body.knee_height is not None and fx.get("knee_clearance_m") is not None:
         under, knee, allow = fx["knee_clearance_m"], body.knee_height, body.knee_allowance
         if under < knee:
-            r.status = "FAIL"
+            r.status = DO_NOT_USE
             r.reason = (f"Knee space {under * 100:.1f} cm high is lower than this person's measured knee height "
                         f"({knee * 100:.1f} cm).")
         elif under < knee + allow:
-            r.status = "CAUTION"
+            r.status = REACH_CAUTION
             r.reason = (f"Knee space {under * 100:.1f} cm high clears this person's measured knee height "
                         f"({knee * 100:.1f} cm) by less than {allow * 100:.0f} cm, the allowance for clothing and "
                         "moving in (an estimate).")
         else:
-            r.status = "PASS"
+            r.status = PASS
             r.reason = (f"Knee space {under * 100:.1f} cm high clears this person's measured knee height "
                         f"({knee * 100:.1f} cm) with room to spare.")
         r.inputs = [{"input": "knee height", "value_m": round(knee, 3), "status": "measured",
@@ -302,12 +353,13 @@ def check_knee_space(profile: ComposedProfile, task, fx, size, body=None) -> Res
                      "source": "data/body.json (estimate)"}]
         return r
     if size is None:
-        r.status, r.reason = "UNVERIFIED", "No measured wheelchair-user sizes loaded (data/wheelchair_size.json)."
+        r.status, r.reason = NOT_CHECKED_YET, "No measured wheelchair-user sizes loaded (data/wheelchair_size.json)."
     elif fx.get("knee_clearance_m") is None:
-        r.status = "UNVERIFIED"
+        r.status = NOT_CHECKED_YET
         r.reason = "The room file doesn't give the height of the knee space under this fixture."
     else:
-        r.status, r.reason = seated_size.knee_check(size, fx["knee_clearance_m"])
+        old, r.reason = seated_size.knee_check(size, fx["knee_clearance_m"])
+        r.status = {"PASS": PASS, "CAUTION": REACH_CAUTION, "FAIL": DO_NOT_USE}[old]
     return r
 
 
@@ -320,15 +372,21 @@ def _arm(side):
 
 
 def summary_table(results):
-    rows = [("profile", "task", "fixture", "result", "why")]
+    rows = [("profile", "task", "fixture", "result", "from", "why")]
     for r in results:
-        rows.append((r.profile, r.task, r.fixture, r.status, r.reason))
-    widths = [max(len(row[i]) for row in rows) for i in range(4)]
+        rows.append((r.profile, r.task, r.fixture, r.label, r.came_from, r.reason))
+    widths = [max(len(row[i]) for row in rows) for i in range(5)]
     out = []
     for row in rows:
-        out.append("  ".join(c.ljust(w) for c, w in zip(row[:4], widths)) + "  " + row[4])
+        out.append("  ".join(c.ljust(w) for c, w in zip(row[:5], widths)) + "  " + row[5])
     return "\n".join(out)
 
 
 def to_json(results):
-    return json.dumps([asdict(r) for r in results], indent=2)
+    out = []
+    for r in results:
+        d = asdict(r)
+        d.pop("_extra_layers", None)
+        d["label"] = r.label
+        out.append(d)
+    return json.dumps(out, indent=2)

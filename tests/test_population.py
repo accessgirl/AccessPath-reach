@@ -44,11 +44,11 @@ def results():
 
 def test_avatar_pass_needs_measured_users_too(results):
     shelf = results[("baseline_wheelchair", "shelf_high")]
-    assert shelf.status == "CAUTION" and shelf.population_pct == 5
+    assert shelf.status == "REACH CAUTION" and shelf.population_pct == 5
     switch = results[("baseline_wheelchair", "switch_door")]
     assert switch.status == "PASS" and switch.population_pct == 83
     low = results[("baseline_wheelchair", "outlet_low")]
-    assert low.status == "CAUTION" and "below 16 in" in low.reason
+    assert low.status == "REACH CAUTION" and "below 16 in" in low.reason
 
 
 def test_standing_profiles_are_not_judged_by_wheelchair_data(results):
